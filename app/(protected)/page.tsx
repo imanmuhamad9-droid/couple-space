@@ -5,12 +5,14 @@ import Link from 'next/link'
 import { Calendar, MapPin, Heart } from 'lucide-react'
 import DashboardGallery from './DashboardGallery'
 import MeetingThumbnails from './MeetingThumbnails'
+import { connection } from 'next/server' // 1. IMPORT INI
 
-// TAMBAHKAN BARIS INI:
-export const dynamic = 'force-dynamic'
 export const instant = false
 
 export default async function DashboardPage() {
+  // 2. TAMBAHKAN BARIS INI TEPAT SEBELUM new Date()
+  await connection() 
+  
   const now = new Date()
   const nowString = now.toISOString()
 
