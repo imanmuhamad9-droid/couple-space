@@ -121,28 +121,28 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
       {/* Header & Filter */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Tab Filter */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+                <div className="flex gap-2 bg-pink-50 p-1.5 rounded-full w-fit">
           <button 
             onClick={() => setFilter('upcoming')} 
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'upcoming' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'upcoming' ? 'bg-pink-500 text-white shadow-md' : 'text-gray-500 hover:text-pink-500'}`}
           >
             Akan Datang
           </button>
           <button 
             onClick={() => setFilter('done')} 
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'done' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'done' ? 'bg-pink-500 text-white shadow-md' : 'text-gray-500 hover:text-pink-500'}`}
           >
             Selesai
           </button>
           <button 
             onClick={() => setFilter('all')} 
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'all' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'all' ? 'bg-pink-500 text-white shadow-md' : 'text-gray-500 hover:text-pink-500'}`}
           >
             Semua
           </button>
         </div>
 
-        <button onClick={handleAddNew} className="flex items-center justify-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors">
+                <button onClick={handleAddNew} className="flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white px-6 py-3 rounded-2xl text-sm font-bold hover:scale-105 transition-transform shadow-md">
           <Plus size={18} /> Tambah Jadwal
         </button>
       </div>
