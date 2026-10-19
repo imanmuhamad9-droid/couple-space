@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { format, isSameMonth, parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { Plus, Edit2, Trash2, CheckCircle2, X, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react'
+import { Plus, Edit2, Trash2, CheckCircle2, X } from 'lucide-react'
 import MeetingForm from '@/components/MeetingForm'
 import MemoryUploadForm from '@/components/MemoryUploadForm'
 import { deleteMeeting } from '@/app/actions/meetings'
@@ -26,7 +26,7 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
   const [editingMeeting, setEditingMeeting] = useState<Meeting | undefined>(undefined)
   
   // State Filter
-  const [filter, setFilter] = useState<'all' | 'upcoming' | 'done'>('upcoming') // Default ke 'upcoming'
+  const [filter, setFilter] = useState<'all' | 'upcoming' | 'done'>('upcoming')
   
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
@@ -62,14 +62,14 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
       filtered = initialMeetings.filter(m => m.status === 'done')
     }
 
-    // 2. Urutkan: Yang 'planned' naik ke atas. Kalau statusnya sama, urutkan berdasarkan tanggal
+    // 2. Urutkan: Yang 'planned' naik ke atas.
     filtered.sort((a, b) => {
       if (a.status === 'planned' && b.status !== 'planned') return -1
       if (a.status !== 'planned' && b.status === 'planned') return 1
       return new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
     })
 
-    // 3. Grouping berdasarkan tanggal (yyyy-MM-dd)
+    // 3. Grouping berdasarkan tanggal
     const groups: Record<string, Meeting[]> = {}
     filtered.forEach(m => {
       const dateStr = format(parseISO(m.start_at), 'yyyy-MM-dd')
@@ -108,7 +108,7 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
       {/* Lightbox */}
       {lightboxImage && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 cursor-zoom-out"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 cursor-zoom-out backdrop-blur-sm"
           onClick={() => setLightboxImage(null)}
         >
           <img src={lightboxImage} alt="Zoomed" className="max-w-full max-h-full object-contain rounded-lg" />
@@ -120,29 +120,29 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
 
       {/* Header & Filter */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Tab Filter */}
-                <div className="flex gap-2 bg-pink-50 p-1.5 rounded-full w-fit">
+        {/* Tab Filter Biru */}
+        <div className="flex gap-2 bg-blue-50 p-1.5 rounded-full w-fit">
           <button 
             onClick={() => setFilter('upcoming')} 
-            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'upcoming' ? 'bg-pink-500 text-white shadow-md' : 'text-gray-500 hover:text-pink-500'}`}
+            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'upcoming' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-500'}`}
           >
             Akan Datang
           </button>
           <button 
             onClick={() => setFilter('done')} 
-            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'done' ? 'bg-pink-500 text-white shadow-md' : 'text-gray-500 hover:text-pink-500'}`}
+            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'done' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-500'}`}
           >
             Selesai
           </button>
           <button 
             onClick={() => setFilter('all')} 
-            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'all' ? 'bg-pink-500 text-white shadow-md' : 'text-gray-500 hover:text-pink-500'}`}
+            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'all' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-500'}`}
           >
             Semua
           </button>
         </div>
 
-                <button onClick={handleAddNew} className="flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white px-6 py-3 rounded-2xl text-sm font-bold hover:scale-105 transition-transform shadow-md">
+        <button onClick={handleAddNew} className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-6 py-3 rounded-2xl text-sm font-bold hover:scale-105 transition-transform shadow-md">
           <Plus size={18} /> Tambah Jadwal
         </button>
       </div>
@@ -150,52 +150,52 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
       {/* List Meetings (Grouped) */}
       <div className="space-y-6">
         {groupedMeetings.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-gray-200">
-            <p className="text-gray-500">Belum ada jadwal di kategori ini.</p>
+          <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-blue-200">
+            <p className="text-gray-500 font-medium">Belum ada jadwal di kategori ini.</p>
           </div>
         ) : (
           groupedMeetings.map(([dateStr, meetingsOnDate]) => (
-            <div key={dateStr} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div key={dateStr} className="bg-white rounded-3xl shadow-sm border border-blue-50 overflow-hidden">
               {/* Header Tanggal */}
-              <div className="bg-gray-50 px-5 py-3 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="font-semibold text-gray-800">
+              <div className="bg-blue-50/50 px-6 py-4 border-b border-blue-50 flex justify-between items-center">
+                <h3 className="font-bold text-blue-900">
                   {format(new Date(dateStr), 'EEEE, dd MMMM yyyy', { locale: localeId })}
                 </h3>
                 {/* Indikator kalau hari ini */}
                 {format(new Date(), 'yyyy-MM-dd') === dateStr && (
-                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">HARI INI</span>
+                  <span className="text-xs font-bold text-white bg-blue-500 px-3 py-1 rounded-full shadow-sm">HARI INI</span>
                 )}
               </div>
               
               {/* List Acara di Tanggal Tersebut */}
               <div className="divide-y divide-gray-50">
                 {meetingsOnDate.map(meeting => (
-                  <div key={meeting.id} className="p-5 flex flex-col md:flex-row gap-4 justify-between md:items-start hover:bg-gray-50/50 transition-colors">
+                  <div key={meeting.id} className="p-6 flex flex-col md:flex-row gap-5 justify-between md:items-start hover:bg-blue-50/30 transition-colors">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h4 className="font-semibold text-gray-800">{meeting.title}</h4>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wider ${
+                      <div className="flex flex-wrap items-center gap-3 mb-2">
+                        <h4 className="font-bold text-lg text-gray-800">{meeting.title}</h4>
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wider ${
                           meeting.status === 'done' ? 'bg-green-100 text-green-700' :
                           meeting.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                         }`}>
                           {meeting.status.toUpperCase()}
                         </span>
-                        <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-md">
+                        <span className="text-xs text-gray-600 font-bold bg-gray-100 px-2.5 py-1 rounded-md">
                           {format(parseISO(meeting.start_at), 'HH:mm')} WIB
                         </span>
                       </div>
-                      {meeting.location && <p className="text-sm text-gray-600">📍 {meeting.location}</p>}
-                      {meeting.description && <p className="text-sm text-gray-500 mt-1">{meeting.description}</p>}
+                      {meeting.location && <p className="text-sm text-gray-600 font-medium">📍 {meeting.location}</p>}
+                      {meeting.description && <p className="text-sm text-gray-500 mt-2">{meeting.description}</p>}
 
                       {/* Galeri Foto */}
                       {meeting.memories && meeting.memories.length > 0 && (
-                        <div className="mt-3">
-                          <div className="flex gap-2 overflow-x-auto pb-2">
+                        <div className="mt-4">
+                          <div className="flex gap-3 overflow-x-auto pb-2">
                             {meeting.memories.map((mem) => (
                               <div 
                                 key={mem.id} 
                                 onClick={() => imageUrls[mem.storage_path] && setLightboxImage(imageUrls[mem.storage_path])}
-                                className="relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                                className="relative w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
                               >
                                 {imageUrls[mem.storage_path] ? (
                                   <img src={imageUrls[mem.storage_path]} alt="Memory" className="object-cover w-full h-full" />
@@ -206,7 +206,7 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
                             ))}
                           </div>
                           {meeting.memories[0].caption && (
-                            <div className="mt-2 bg-gray-50 p-2.5 rounded-lg text-sm text-gray-700 italic border border-gray-100">
+                            <div className="mt-3 bg-gray-50 p-3 rounded-xl text-sm text-gray-700 italic border border-gray-100">
                               "{meeting.memories[0].caption}"
                             </div>
                           )}
@@ -218,17 +218,17 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
                     <div className="flex items-center gap-2">
                       {meeting.status === 'planned' && (
                         <>
-                          <button onClick={() => openUploadModal(meeting.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 text-xs font-semibold rounded-lg hover:bg-green-100 transition-colors">
+                          <button onClick={() => openUploadModal(meeting.id)} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 text-xs font-bold rounded-xl hover:bg-blue-100 transition-colors">
                             <CheckCircle2 size={16} /> Done
                           </button>
-                          <button onClick={() => handleEdit(meeting)} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg">
-                            <Edit2 size={18} />
+                          <button onClick={() => handleEdit(meeting)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors">
+                            <Edit2 size={20} />
                           </button>
                         </>
                       )}
                       {meeting.status !== 'done' && (
-                         <button onClick={() => handleDelete(meeting.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg">
-                           <Trash2 size={18} />
+                         <button onClick={() => handleDelete(meeting.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+                           <Trash2 size={20} />
                          </button>
                       )}
                     </div>
@@ -242,11 +242,11 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
 
       {/* Modal Edit/Tambah Form */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">{editingMeeting ? 'Edit Jadwal' : 'Tambah Jadwal Baru'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full"><X size={20} /></button>
+              <h2 className="text-xl font-bold text-gray-800">{editingMeeting ? 'Edit Jadwal' : 'Tambah Jadwal Baru'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors"><X size={20} /></button>
             </div>
             <MeetingForm initialData={editingMeeting} onClose={() => setIsModalOpen(false)} />
           </div>
@@ -255,11 +255,11 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
 
       {/* Modal Upload Memori */}
       {isUploadModalOpen && selectedMeetingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Upload Kenangan</h2>
-              <button onClick={() => setIsUploadModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full"><X size={20} /></button>
+              <h2 className="text-xl font-bold text-gray-800">Upload Kenangan</h2>
+              <button onClick={() => setIsUploadModalOpen(false)} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors"><X size={20} /></button>
             </div>
             <p className="text-sm text-gray-500 mb-4">Simpan momen indah dari pertemuan ini.</p>
             <MemoryUploadForm meetingId={selectedMeetingId} onClose={() => setIsUploadModalOpen(false)} />

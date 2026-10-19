@@ -5,10 +5,13 @@ import Link from 'next/link'
 import { Calendar, MapPin, Heart, ArrowRight } from 'lucide-react'
 import DashboardGallery from './DashboardGallery'
 import MeetingThumbnails from './MeetingThumbnails'
+import { connection } from 'next/server' // WAJIB UNTUK VERCEL
 
 export const instant = false
 
 export default async function DashboardPage() {
+  await connection() // <-- INI YANG BIKIN ERROR KEMARIN, SEKARANG UDAH DIBALIKIN
+  
   const now = new Date()
   const nowString = now.toISOString()
 
@@ -62,20 +65,20 @@ export default async function DashboardPage() {
           </h2>
           <p className="text-gray-500 font-medium mt-1">Senang melihatmu lagi.</p>
         </div>
-        <div className="w-12 h-12 bg-pink-200 rounded-full flex items-center justify-center text-xl font-bold text-pink-700 shadow-inner">
+        <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center text-xl font-bold text-blue-700 shadow-inner">
           {settings?.partner_a_name?.[0] || 'U'}
         </div>
       </header>
 
       {/* CARD ROMANTIS (Hitungan Hari) */}
       {settings?.anniversary_date && (
-        <div className="bg-gradient-to-br from-pink-500 via-rose-400 to-pink-400 text-white p-8 rounded-[2rem] shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="bg-gradient-to-br from-blue-500 via-cyan-400 to-blue-400 text-white p-8 rounded-[2rem] shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="relative z-10 text-center md:text-left">
-            <h3 className="text-sm font-semibold text-pink-100 mb-1 flex items-center justify-center md:justify-start gap-2 uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-blue-100 mb-1 flex items-center justify-center md:justify-start gap-2 uppercase tracking-wide">
               <Heart size={16} fill="currentColor" /> Kita sudah bersama
             </h3>
             <div className="text-6xl font-extrabold mb-2 tracking-tighter drop-shadow-sm">{daysTogether} <span className="text-2xl font-semibold drop-shadow-none">Hari</span></div>
-            <p className="text-pink-50 font-medium">
+            <p className="text-blue-50 font-medium">
               Sejak {format(new Date(settings.anniversary_date), 'dd MMMM yyyy', { locale: localeId })}
             </p>
           </div>
@@ -92,9 +95,9 @@ export default async function DashboardPage() {
       )}
 
       {/* Card Pertemuan Terdekat */}
-      <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-pink-50 relative overflow-hidden group">
+      <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-blue-50 relative overflow-hidden group">
         <div className="relative z-10">
-          <h3 className="text-sm font-bold text-pink-500 mb-3 flex items-center gap-2 uppercase tracking-wide">
+          <h3 className="text-sm font-bold text-blue-500 mb-3 flex items-center gap-2 uppercase tracking-wide">
             <Calendar size={18} /> Jadwal Terdekat
           </h3>
           
@@ -109,13 +112,13 @@ export default async function DashboardPage() {
           ) : (
             <div>
               <div className="text-2xl font-bold text-gray-400 mb-2">Belum ada jadwal</div>
-              <Link href="/meetings" className="text-sm font-bold text-pink-600 hover:underline flex items-center gap-1">
+              <Link href="/meetings" className="text-sm font-bold text-blue-600 hover:underline flex items-center gap-1">
                 Buat jadwal baru <ArrowRight size={16} />
               </Link>
             </div>
           )}
         </div>
-        <div className="absolute -right-4 -bottom-4 text-pink-50 opacity-50 group-hover:scale-110 transition-transform">
+        <div className="absolute -right-4 -bottom-4 text-blue-50 opacity-50 group-hover:scale-110 transition-transform">
           <Calendar size={120} />
         </div>
       </div>
@@ -129,7 +132,7 @@ export default async function DashboardPage() {
               <div key={meeting.id} className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
                 <div className="mb-4">
                   <h4 className="font-bold text-gray-800 text-lg">{meeting.title}</h4>
-                  <p className="text-sm font-medium text-pink-500">
+                  <p className="text-sm font-medium text-blue-500">
                     {format(new Date(meeting.start_at), 'dd MMM yyyy - HH:mm', { locale: localeId })}
                   </p>
                   {meeting.location && <p className="text-xs text-gray-400 mt-1 font-medium">📍 {meeting.location}</p>}
@@ -149,7 +152,7 @@ export default async function DashboardPage() {
       <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-gray-800">Foto Terbaru</h3>
-          <Link href="/memories" className="text-sm font-bold text-pink-500 hover:text-pink-600 hover:underline">Lihat Semua</Link>
+          <Link href="/memories" className="text-sm font-bold text-blue-500 hover:text-blue-600 hover:underline">Lihat Semua</Link>
         </div>
         <div className="flex-1">
           <DashboardGallery memories={recentMemories || []} />
