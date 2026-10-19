@@ -13,7 +13,7 @@ type Memory = {
   meetings: {
     title: string
     start_at: string
-  } | null
+  }[] | null
 }
 
 export default function MemoryGallery({ initialMemories }: { initialMemories: Memory[] }) {

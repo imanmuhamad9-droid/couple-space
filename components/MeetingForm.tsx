@@ -99,7 +99,7 @@ export default function MeetingForm({
           <div className="relative">
             <DatePicker
               selected={startDate}
-              onChange={(date) => setStartDate(date)}
+              onChange={(date: Date | null) => setStartDate(date)}
               dateFormat="dd MMMM yyyy"
               locale="id"
               placeholderText="Pilih tanggal"
@@ -131,7 +131,7 @@ export default function MeetingForm({
           <div className="relative">
             <DatePicker
               selected={endDate}
-              onChange={(date) => setEndDate(date)}
+              onChange={(date: Date | null) => setEndDate(date)}
               dateFormat="dd MMMM yyyy"
               locale="id"
               placeholderText="Pilih tanggal"

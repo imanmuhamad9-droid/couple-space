@@ -76,7 +76,7 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
           <div className="relative">
             <DatePicker
               selected={anniversaryDate}
-              onChange={(date) => setAnniversaryDate(date)}
+              onChange={(date: Date | null) => setAnniversaryDate(date)}
               dateFormat="dd MMMM yyyy"
               locale="id"
               placeholderText="Pilih tanggal jadian"
