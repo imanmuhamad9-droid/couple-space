@@ -1,0 +1,115 @@
+'use server'
+
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { revalidatePath } from 'next/cache'
+
+// 1. CREATE (Tambah Jadwal)
+export async function addMeeting(formData: FormData) {
+  const title = formData.get('title') as string
+  const description = formData.get('description') as string
+  const location = formData.get('location') as string
+  const start_at = formData.get('start_at') as string
+  const end_at = formData.get('end_at') as string
+
+  const { error } = await supabaseAdmin.from('meetings').insert({
+    title,
+    description,
+    location,
+    start_at: new Date(start_at).toISOString(),
+    end_at: end_at ? new Date(end_at).toISOString() : null,
+  })
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/meetings')
+  revalidatePath('/') // Refresh dashboard juga
+}
+
+// 2. UPDATE (Edit Jadwal)
+export async function updateMeeting(id: number, formData: FormData) {
+  const title = formData.get('title') as string
+  const description = formData.get('description') as string
+  const location = formData.get('location') as string
+  const start_at = formData.get('start_at') as string
+  const end_at = formData.get('end_at') as string
+  const status = formData.get('status') as string
+
+  const { error } = await supabaseAdmin
+    .from('meetings')
+    .update({
+      title,
+      description,
+      location,
+      start_at: new Date(start_at).toISOString(),
+      end_at: end_at ? new Date(end_at).toISOString() : null,
+      status,
+    })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/meetings')
+  revalidatePath('/')
+}
+
+// 3. DELETE (Hapus Jadwal)
+export async function deleteMeeting(id: number) {
+  const { error } = await supabaseAdmin.from('meetings').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath('/meetings')
+  revalidatePath('/')
+}
+
+// 4. TANDAI SELESAI (Quick Update)
+export async function markMeetingDone(id: number) {
+  const { error } = await supabaseAdmin
+    .from('meetings')
+    .update({ status: 'done' })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/meetings')
+  revalidatePath('/')
+}
+
+// 5. UPLOAD MEMORIES & TANDAI SELESAI
+export async function uploadMemories(meetingId: number, formData: FormData) {
+  const files = formData.getAll('files') as File[]
+  const caption = formData.get('caption') as string
+  
+  if (!files || files.length === 0) {
+    throw new Error('Pilih minimal satu foto.')
+  }
+
+  const uploadPromises = files.map(async (file) => {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    const filePath = `meeting-${meetingId}/${fileName}`
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('memories')
+      .upload(filePath, file)
+
+    if (uploadError) throw new Error(uploadError.message)
+
+    const { error: dbError } = await supabaseAdmin.from('memories').insert({
+      meeting_id: meetingId,
+      media_type: 'photo',
+      storage_path: filePath,
+      caption: caption, // <-- Tambahan untuk simpan catatan
+    })
+
+    if (dbError) throw new Error(dbError.message)
+    return filePath
+  })
+
+  await Promise.all(uploadPromises)
+
+  const { error: updateError } = await supabaseAdmin
+    .from('meetings')
+    .update({ status: 'done' })
+    .eq('id', meetingId)
+
+  if (updateError) throw new Error(updateError.message)
+
+  revalidatePath('/meetings')
+  revalidatePath('/')
+}

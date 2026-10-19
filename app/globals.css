@@ -24,3 +24,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Styling tambahan untuk React Datepicker */
+.react-datepicker {
+  font-family: inherit !important;
+  border: none !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+}
+.react-datepicker__header {
+  background-color: white !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  border-top-left-radius: 1rem !important;
+  border-top-right-radius: 1rem !important;
+  padding-top: 12px !important;
+}
+.react-datepicker__day--selected {
+  background-color: black !important;
+  border-radius: 0.5rem !important;
+}
+.react-datepicker__day:hover {
+  border-radius: 0.5rem !important;
+}
+.react-datepicker__time-container {
+  border-left: 1px solid #f3f4f6 !important;
+}
+.react-datepicker__time-list-item--selected {
+  background-color: black !important;
+}
