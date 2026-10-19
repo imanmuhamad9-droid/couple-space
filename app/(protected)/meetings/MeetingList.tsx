@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { Plus, Edit2, Trash2, CheckCircle2, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, CheckCircle2, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import MeetingForm from '@/components/MeetingForm'
 import MemoryUploadForm from '@/components/MemoryUploadForm'
 import { deleteMeeting } from '@/app/actions/meetings'
@@ -25,13 +25,20 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
   const [selectedMeetingId, setSelectedMeetingId] = useState<number | null>(null)
   const [editingMeeting, setEditingMeeting] = useState<Meeting | undefined>(undefined)
   
-  // State Filter
+  // State Filter & Pagination
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'done'>('upcoming')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10 // 10 Kotak Tanggal per halaman
   
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
 
-  // Efek untuk mengambil URL gambar
+  // Reset halaman ke 1 kalau ganti filter
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filter])
+
+  // Ambil URL gambar
   useEffect(() => {
     const fetchUrls = async () => {
       const newUrls: Record<string, string> = {}
@@ -52,9 +59,8 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
     fetchUrls()
   }, [initialMeetings])
 
-  // LOGIKA UTAMA: Filter & Grouping
-  const filteredAndGroupedMeetings = () => {
-    // 1. Filter berdasarkan tab
+  // LOGIKA FILTER & GROUPING
+  const getProcessedMeetings = () => {
     let filtered = initialMeetings
     if (filter === 'upcoming') {
       filtered = initialMeetings.filter(m => m.status === 'planned')
@@ -62,14 +68,14 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
       filtered = initialMeetings.filter(m => m.status === 'done')
     }
 
-    // 2. Urutkan: Yang 'planned' naik ke atas.
+    // Urutkan: planned di atas, lalu berdasarkan tanggal
     filtered.sort((a, b) => {
       if (a.status === 'planned' && b.status !== 'planned') return -1
       if (a.status !== 'planned' && b.status === 'planned') return 1
       return new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
     })
 
-    // 3. Grouping berdasarkan tanggal
+    // Grouping per tanggal
     const groups: Record<string, Meeting[]> = {}
     filtered.forEach(m => {
       const dateStr = format(parseISO(m.start_at), 'yyyy-MM-dd')
@@ -77,10 +83,18 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
       groups[dateStr].push(m)
     })
 
-    return Object.entries(groups)
+    // Pagination Logic
+    const groupedArray = Object.entries(groups)
+    const totalPages = Math.ceil(groupedArray.length / itemsPerPage)
+    const paginatedGroups = groupedArray.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    )
+
+    return { paginatedGroups, totalPages, totalGroups: groupedArray.length }
   }
 
-  const groupedMeetings = filteredAndGroupedMeetings()
+  const { paginatedGroups, totalPages, totalGroups } = getProcessedMeetings()
 
   const handleEdit = (meeting: Meeting) => {
     setEditingMeeting(meeting)
@@ -120,7 +134,6 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
 
       {/* Header & Filter */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Tab Filter Biru */}
         <div className="flex gap-2 bg-blue-50 p-1.5 rounded-full w-fit">
           <button 
             onClick={() => setFilter('upcoming')} 
@@ -149,19 +162,18 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
 
       {/* List Meetings (Grouped) */}
       <div className="space-y-6">
-        {groupedMeetings.length === 0 ? (
+        {paginatedGroups.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-blue-200">
             <p className="text-gray-500 font-medium">Belum ada jadwal di kategori ini.</p>
           </div>
         ) : (
-          groupedMeetings.map(([dateStr, meetingsOnDate]) => (
+          paginatedGroups.map(([dateStr, meetingsOnDate]) => (
             <div key={dateStr} className="bg-white rounded-3xl shadow-sm border border-blue-50 overflow-hidden">
               {/* Header Tanggal */}
               <div className="bg-blue-50/50 px-6 py-4 border-b border-blue-50 flex justify-between items-center">
                 <h3 className="font-bold text-blue-900">
                   {format(new Date(dateStr), 'EEEE, dd MMMM yyyy', { locale: localeId })}
                 </h3>
-                {/* Indikator kalau hari ini */}
                 {format(new Date(), 'yyyy-MM-dd') === dateStr && (
                   <span className="text-xs font-bold text-white bg-blue-500 px-3 py-1 rounded-full shadow-sm">HARI INI</span>
                 )}
@@ -239,6 +251,35 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
           ))
         )}
       </div>
+
+      {/* PAGINATION CONTROLS */}
+      {totalGroups > itemsPerPage && (
+        <div className="flex justify-between items-center bg-white px-6 py-4 rounded-2xl shadow-sm border border-blue-50 mt-6">
+          <p className="text-sm text-gray-500 font-medium">
+            Menampilkan <span className="font-bold text-gray-800">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-bold text-gray-800">{Math.min(currentPage * itemsPerPage, totalGroups)}</span> dari <span className="font-bold text-gray-800">{totalGroups}</span> tanggal
+          </p>
+          
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 text-gray-600 disabled:opacity-50 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <span className="text-sm font-bold text-gray-700">
+              {currentPage} / {totalPages}
+            </span>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 text-gray-600 disabled:opacity-50 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal Edit/Tambah Form */}
       {isModalOpen && (

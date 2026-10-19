@@ -4,8 +4,7 @@ import MemoryGallery from './MemoryGallery'
 export const instant = false
 
 export default async function MemoriesPage() {
-  // Ambil semua foto, urutkan dari yang terbaru
-  // Kita juga join ke tabel meetings buat dapet judul dan tanggal jadwalnya
+  // Kita pastikan relasi 'meetings' benar-benar diambil
   const { data: memories, error } = await supabaseAdmin
     .from('memories')
     .select(`
