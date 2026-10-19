@@ -6,6 +6,8 @@ import { Calendar, MapPin, Heart } from 'lucide-react'
 import DashboardGallery from './DashboardGallery'
 import MeetingThumbnails from './MeetingThumbnails'
 
+// TAMBAHKAN BARIS INI:
+export const dynamic = 'force-dynamic'
 export const instant = false
 
 export default async function DashboardPage() {
