@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { format, isSameMonth, parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { X, Image as ImageIcon, Calendar } from 'lucide-react'
 
@@ -13,17 +13,15 @@ type Memory = {
   meetings: {
     title: string
     start_at: string
-  }[] | null
+  }[] | null // Kita set sebagai Array
 }
 
 export default function MemoryGallery({ initialMemories }: { initialMemories: Memory[] }) {
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [selectedImage, setSelectedImage] = useState<Memory | null>(null)
   
-  // State untuk Filter Bulan (default: semua bulan)
   const [selectedMonth, setSelectedMonth] = useState<string>('all')
 
-  // 1. Ambil URL gambar
   useEffect(() => {
     const fetchUrls = async () => {
       const newUrls: Record<string, string> = {}
@@ -39,24 +37,24 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
     if (initialMemories.length > 0) fetchUrls()
   }, [initialMemories])
 
-  // 2. Logika Filter Bulan
   const availableMonths = useMemo(() => {
     const months = new Set<string>()
     initialMemories.forEach(mem => {
-      if (mem.meetings?.start_at) {
-        // Format jadi "yyyy-MM" (misal: 2023-10)
-        months.add(format(parseISO(mem.meetings.start_at), 'yyyy-MM'))
+      // Kita ambil data pertama dari array meetings
+      const meetingInfo = mem.meetings?.[0]
+      if (meetingInfo?.start_at) {
+        months.add(format(parseISO(meetingInfo.start_at), 'yyyy-MM'))
       }
     })
-    // Urutkan dari yang terbaru
     return Array.from(months).sort().reverse()
   }, [initialMemories])
 
   const filteredMemories = useMemo(() => {
     if (selectedMonth === 'all') return initialMemories
     return initialMemories.filter(mem => {
-      if (!mem.meetings?.start_at) return false
-      return format(parseISO(mem.meetings.start_at), 'yyyy-MM') === selectedMonth
+      const meetingInfo = mem.meetings?.[0]
+      if (!meetingInfo?.start_at) return false
+      return format(parseISO(meetingInfo.start_at), 'yyyy-MM') === selectedMonth
     })
   }, [initialMemories, selectedMonth])
 
@@ -72,7 +70,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
 
   return (
     <div className="space-y-6">
-      {/* Filter Dropdown */}
       <div className="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100 w-fit">
         <Calendar size={18} className="text-gray-500 ml-2" />
         <select
@@ -89,44 +86,45 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
         </select>
       </div>
 
-      {/* Grid Masonry */}
       <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-        {filteredMemories.map((mem) => (
-          <div 
-            key={mem.id} 
-            onClick={() => setSelectedImage(mem)}
-            className="break-inside-avoid relative group rounded-2xl overflow-hidden cursor-pointer bg-gray-100 min-h-[100px]"
-          >
-            {imageUrls[mem.storage_path] ? (
-              <img 
-                src={imageUrls[mem.storage_path]} 
-                alt="Memory" 
-                className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105" 
-                // Handle gambar yang error/rusak
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.parentElement?.classList.add('hidden');
-                }}
-              />
-            ) : (
-              <div className="w-full aspect-square animate-pulse bg-gray-200" />
-            )}
-            
-            {/* Overlay Info saat di-hover */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-              <p className="text-white font-medium text-sm line-clamp-2">{mem.meetings?.title || 'Tanpa Judul'}</p>
-              {mem.meetings && (
-                <p className="text-gray-300 text-xs mt-1">
-                  {format(new Date(mem.meetings.start_at), 'dd MMM yyyy', { locale: localeId })}
-                </p>
+        {filteredMemories.map((mem) => {
+          // Ambil info meeting pertama untuk ditampilkan
+          const meetingInfo = mem.meetings?.[0]
+
+          return (
+            <div 
+              key={mem.id} 
+              onClick={() => setSelectedImage(mem)}
+              className="break-inside-avoid relative group rounded-2xl overflow-hidden cursor-pointer bg-gray-100 min-h-[100px]"
+            >
+              {imageUrls[mem.storage_path] ? (
+                <img 
+                  src={imageUrls[mem.storage_path]} 
+                  alt="Memory" 
+                  className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105" 
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.parentElement?.classList.add('hidden');
+                  }}
+                />
+              ) : (
+                <div className="w-full aspect-square animate-pulse bg-gray-200" />
               )}
+              
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                <p className="text-white font-medium text-sm line-clamp-2">{meetingInfo?.title || 'Tanpa Judul'}</p>
+                {meetingInfo && (
+                  <p className="text-gray-300 text-xs mt-1">
+                    {format(new Date(meetingInfo.start_at), 'dd MMM yyyy', { locale: localeId })}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      {/* Lightbox / Popup Saat Gambar Diklik */}
       {selectedImage && imageUrls[selectedImage.storage_path] && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 md:p-10 backdrop-blur-sm"
@@ -151,10 +149,10 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
             
             <div className="text-center">
               <h3 className="text-white font-semibold text-lg">
-                {selectedImage.meetings?.title || 'Tanpa Judul'}
+                {selectedImage.meetings?.[0]?.title || 'Tanpa Judul'}
               </h3>
               <p className="text-gray-400 text-sm mt-1">
-                {selectedImage.meetings && format(new Date(selectedImage.meetings.start_at), 'EEEE, dd MMMM yyyy', { locale: localeId })}
+                {selectedImage.meetings?.[0] && format(new Date(selectedImage.meetings[0].start_at), 'EEEE, dd MMMM yyyy', { locale: localeId })}
               </p>
               {selectedImage.caption && (
                 <div className="mt-3 bg-white/10 px-4 py-2 rounded-lg inline-block">
