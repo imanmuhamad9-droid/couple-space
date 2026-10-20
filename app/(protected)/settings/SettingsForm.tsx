@@ -62,8 +62,8 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
               <User size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Siapa Aja Nih? 👩‍❤️‍👨</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Kenalan dong, namanya siapa?</p>
+              <h2 className="text-xl font-bold text-gray-800">Kita Siapa Ya? 👩‍❤️‍👨</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Isi nama panggilan kalian.</p>
             </div>
           </div>
 
@@ -118,8 +118,8 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
               <Calendar size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Kapan Jadiannya? 🗓️</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Biar hitungan harinya nggak keliru.</p>
+              <h2 className="text-xl font-bold text-gray-800">Sejak Kapan Jadiannya? 🗓️</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Jangan sampe lupa sama tanggal penting ini!</p>
             </div>
           </div>
 

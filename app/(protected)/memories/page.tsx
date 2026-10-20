@@ -8,10 +8,11 @@ export const instant = false
 export default async function MemoriesPage() {
   const { data: memories, error } = await supabaseAdmin
     .from('memories')
-    .select(`
+        .select(`
       id,
       storage_path,
       caption,
+      title,
       created_at,
       meetings (
         title,
@@ -28,10 +29,10 @@ export default async function MemoriesPage() {
     <div className="space-y-6">
       {/* Header dengan Tombol Upload */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Galeri Kenangan</h2>
-          <p className="text-gray-500 font-medium mt-1">Semua momen indah yang pernah kita lewati.</p>
-        </div>
+                    <div>
+        <h2 className="text-4xl md:text-5xl font-black text-gray-800 font-slab">Galeri Kita 📸</h2>
+        <p className="text-gray-500 font-medium mt-2 text-lg">Semua momen indah yang pernah kita lewati.</p>
+      </div>
         
         <Link 
           href="/memories/upload" 

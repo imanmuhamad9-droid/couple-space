@@ -24,18 +24,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div 
-      className="flex h-screen transition-colors duration-500"
-      style={{ 
-        backgroundColor: 'var(--theme-primary-light)',
-        backgroundImage: 'radial-gradient(var(--theme-primary) 1px, transparent 1px)',
-        backgroundSize: '24px 24px',
-      }}
-    >
-      <aside className="hidden md:flex w-64 flex-col bg-white/80 backdrop-blur-md p-6 border-r border-gray-100 justify-between rounded-r-3xl shadow-sm">
+    // Pakai class 'bg-paper-texture' dari globals.css
+    <div className="flex h-screen transition-colors duration-500 bg-paper-texture">
+      {/* Sidebar Desktop */}
+      <aside className="hidden md:flex w-64 flex-col bg-white/90 backdrop-blur-md p-6 border-r border-gray-100 justify-between rounded-r-3xl shadow-sm">
         <div>
-          {/* Judul Sidebar Tanpa Ikon */}
-          <h1 className="text-3xl font-extrabold mb-10 tracking-tighter text-[var(--theme-primary)]">Our Space</h1>
+                    <h1 className="text-3xl font-black mb-10 tracking-tighter text-[var(--theme-primary)] font-slab">Our Space</h1>
           <nav className="space-y-2">
             {menuItems.map((item) => {
               const isActive = pathname === item.path
@@ -66,13 +60,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         </button>
       </aside>
 
+            {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-6 md:p-10 pb-28 md:pb-10">
-        <div className="w-full max-w-full mx-auto">
+        {/* Tambahkan relative z-10 di sini */}
+        <div className="relative z-10 w-full max-w-full mx-auto">
           {children}
         </div>
       </main>
 
-      <nav className="md:hidden fixed bottom-6 left-6 right-6 bg-white/80 backdrop-blur-lg border border-white/30 shadow-xl flex justify-around p-4 rounded-3xl z-50">
+      {/* Bottom Nav Mobile (Solid Putih) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] flex justify-around p-3 z-50">
         {menuItems.map((item) => {
           const isActive = pathname === item.path
           return (

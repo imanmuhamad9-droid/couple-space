@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { Plus, Edit2, Trash2, CheckCircle2, X, ChevronLeft, ChevronRight, Clock, MapPin, CalendarDays, Quote } from 'lucide-react'
+import { Plus, X, ChevronLeft, ChevronRight, Clock, MapPin, CalendarDays, Quote } from 'lucide-react'
 import MeetingForm from '@/components/MeetingForm'
 import MemoryUploadForm from '@/components/MemoryUploadForm'
+import ConfirmModal from '@/components/ConfirmModal'
 import { deleteMeeting } from '@/app/actions/meetings'
 
 type Meeting = {
@@ -26,6 +27,10 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
   const [selectedMeetingId, setSelectedMeetingId] = useState<number | null>(null)
   const [editingMeeting, setEditingMeeting] = useState<Meeting | undefined>(undefined)
   
+  // State untuk Confirm Modal
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'done'>('upcoming')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10 
@@ -66,8 +71,6 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
     }
 
     filtered.sort((a, b) => {
-      if (a.status === 'planned' && b.status !== 'planned') return -1
-      if (a.status !== 'planned' && b.status === 'planned') return 1
       return new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
     })
 
@@ -100,9 +103,17 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
     setIsModalOpen(true)
   }
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Yakin mau hapus jadwal ini?')) {
-      await deleteMeeting(id)
+  // Fungsi Eksekusi Hapus
+  const executeDelete = async () => {
+    if (!confirmDeleteId) return
+    setIsDeleting(true)
+    try {
+      await deleteMeeting(confirmDeleteId)
+      setConfirmDeleteId(null)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -112,7 +123,17 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Custom Confirm Modal */}
+      <ConfirmModal 
+        isOpen={confirmDeleteId !== null}
+        title="Hapus Jadwal?"
+        message="Jadwal ini akan dihapus permanen. Yakin mau lanjut?"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+        isLoading={isDeleting}
+      />
+
       {lightboxImage && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 cursor-zoom-out backdrop-blur-sm"
@@ -127,25 +148,10 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
 
       {/* Header & Filter */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex gap-2 bg-white p-1.5 rounded-full w-fit border border-gray-100 shadow-sm">
-          <button 
-            onClick={() => setFilter('upcoming')} 
-            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'upcoming' ? 'bg-[var(--theme-primary)] text-white shadow-md' : 'text-gray-500 hover:text-[var(--theme-primary)]'}`}
-          >
-            Akan Datang
-          </button>
-          <button 
-            onClick={() => setFilter('done')} 
-            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'done' ? 'bg-[var(--theme-primary)] text-white shadow-md' : 'text-gray-500 hover:text-[var(--theme-primary)]'}`}
-          >
-            Selesai
-          </button>
-          <button 
-            onClick={() => setFilter('all')} 
-            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'all' ? 'bg-[var(--theme-primary)] text-white shadow-md' : 'text-gray-500 hover:text-[var(--theme-primary)]'}`}
-          >
-            Semua
-          </button>
+        <div className="flex gap-2 bg-white/80 backdrop-blur-sm p-1.5 rounded-full w-fit border border-gray-100 shadow-sm">
+          <button onClick={() => setFilter('upcoming')} className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'upcoming' ? 'bg-[var(--theme-primary)] text-white shadow-md' : 'text-gray-500 hover:text-[var(--theme-primary)]'}`}>Akan Datang</button>
+          <button onClick={() => setFilter('done')} className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'done' ? 'bg-[var(--theme-primary)] text-white shadow-md' : 'text-gray-500 hover:text-[var(--theme-primary)]'}`}>Selesai</button>
+          <button onClick={() => setFilter('all')} className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'all' ? 'bg-[var(--theme-primary)] text-white shadow-md' : 'text-gray-500 hover:text-[var(--theme-primary)]'}`}>Semua</button>
         </div>
 
         <button onClick={handleAddNew} className="flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--theme-gradient-from)] to-[var(--theme-gradient-to)] text-white px-6 py-3 rounded-2xl text-sm font-bold hover:scale-105 transition-transform shadow-md">
@@ -163,62 +169,58 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
           paginatedGroups.map(([dateStr, meetingsOnDate]) => (
             <div key={dateStr} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
               
-              {/* HEADER TANGGAL (Warna Dinamis) */}
-              <div className="bg-[var(--theme-primary)] px-6 py-4 flex justify-between items-center transition-colors duration-500">
+              <div className="bg-[var(--theme-primary)] px-6 py-3.5 flex justify-between items-center transition-colors duration-500">
                 <div className="flex items-center gap-3 text-white">
-                  <CalendarDays size={22} />
+                  <CalendarDays size={20} />
                   <h3 className="font-bold text-lg">
                     {format(new Date(dateStr), 'EEEE, dd MMMM yyyy', { locale: localeId })}
                   </h3>
                 </div>
                 {format(new Date(), 'yyyy-MM-dd') === dateStr && (
-                  <span className="text-xs font-bold text-[var(--theme-primary)] bg-white px-3 py-1.5 rounded-full shadow-sm">HARI INI</span>
+                  <span className="text-[10px] font-bold text-[var(--theme-primary)] bg-white px-3 py-1 rounded-full shadow-sm">HARI INI</span>
                 )}
               </div>
               
-              {/* LIST ACARA */}
-              <div className="divide-y divide-gray-100">
+              <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {meetingsOnDate.map(meeting => (
-                  <div key={meeting.id} className="p-6 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8 hover:bg-gray-50/50 transition-colors">
+                  <div key={meeting.id} className="bg-gray-50/50 rounded-2xl border border-gray-100 p-4 flex flex-row gap-4 hover:border-[var(--theme-primary-light)] transition-colors">
                     
-                    {/* Kiri: Info & Foto */}
-                    <div className="flex-1 space-y-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-xs font-bold">
-                          <Clock size={14} /> {format(parseISO(meeting.start_at), 'HH:mm')} WIB
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-sm">
+                          <Clock size={12} /> {format(parseISO(meeting.start_at), 'HH:mm')}
                         </span>
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
                           meeting.status === 'done' ? 'bg-green-100 text-green-700' : 'bg-[var(--theme-primary-light)] text-[var(--theme-primary)]'
                         }`}>
                           {meeting.status === 'done' ? 'SELESAI' : 'TERENCANA'}
                         </span>
                       </div>
 
-                      <h4 className="font-bold text-2xl text-gray-800 leading-tight">{meeting.title}</h4>
-
+                      <h4 className="font-bold text-lg text-gray-800 leading-tight mb-1">{meeting.title}</h4>
+                      
                       {meeting.location && (
-                        <div className="flex items-start gap-2 text-sm text-gray-600 font-medium">
-                          <MapPin size={18} className="mt-0.5 text-[var(--theme-primary)] flex-shrink-0" />
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mb-3">
+                          <MapPin size={14} className="text-[var(--theme-primary)] flex-shrink-0" />
                           <span>{meeting.location}</span>
                         </div>
                       )}
 
                       {meeting.notes && (
-                        <div className="flex items-start gap-2 text-sm text-gray-500 italic bg-[var(--theme-primary-light)]/50 p-3 rounded-xl border border-[var(--theme-primary-light)]">
-                          <Quote size={18} className="mt-0.5 text-[var(--theme-primary)] flex-shrink-0" />
-                          <p>{meeting.notes}</p>
+                        <div className="mt-2 flex items-start gap-1.5 text-[11px] text-gray-600 italic bg-white p-2.5 rounded-lg border border-gray-100">
+                          <Quote size={12} className="mt-0.5 text-[var(--theme-primary)] flex-shrink-0" />
+                          <p className="line-clamp-2">{meeting.notes}</p>
                         </div>
                       )}
 
                       {meeting.memories && meeting.memories.length > 0 && (
-                        <div className="pt-2">
-                          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Inspirasi Visual & Memori</p>
-                          <div className="flex gap-3 overflow-x-auto pb-2">
+                        <div className="mt-3">
+                          <div className="flex gap-2 overflow-x-auto pb-1">
                             {meeting.memories.map((mem) => (
                               <div 
                                 key={mem.id} 
                                 onClick={() => imageUrls[mem.storage_path] && setLightboxImage(imageUrls[mem.storage_path])}
-                                className="relative w-28 h-20 flex-shrink-0 rounded-[1.25rem] overflow-hidden cursor-pointer hover:opacity-80 transition-opacity shadow-sm border border-gray-100"
+                                className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border border-gray-200"
                               >
                                 {imageUrls[mem.storage_path] ? (
                                   <img src={imageUrls[mem.storage_path]} alt="Memory" className="object-cover w-full h-full" />
@@ -232,32 +234,21 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
                       )}
                     </div>
 
-                    {/* Kanan: Tombol Aksi */}
-                    <div className="flex items-center justify-end gap-2 mt-4 md:mt-0 md:w-auto flex-shrink-0 md:border-l md:border-gray-100 md:pl-6">
+                    <div className="flex flex-col gap-2 w-32 flex-shrink-0 justify-center items-center">
                       {meeting.status === 'planned' && (
                         <>
-                          <button 
-                            onClick={() => openUploadModal(meeting.id)} 
-                            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--theme-primary-light)] text-[var(--theme-primary)] text-sm font-bold rounded-full hover:opacity-80 transition-opacity whitespace-nowrap shadow-sm"
-                          >
-                            <CheckCircle2 size={18} /> Tandai Selesai
+                          <button onClick={() => openUploadModal(meeting.id)} className="w-full px-3 py-1.5 bg-green-50 text-green-600 text-[11px] font-bold rounded-lg hover:bg-green-100 transition-colors text-center">
+                            Tandai Selesai
                           </button>
-                          
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => handleEdit(meeting)} className="p-2.5 bg-purple-50 text-purple-600 rounded-full hover:bg-purple-100 transition-colors">
-                              <Edit2 size={20} />
-                            </button>
-                            <button onClick={() => handleDelete(meeting.id)} className="p-2.5 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors">
-                              <Trash2 size={20} />
-                            </button>
-                          </div>
+                          <button onClick={() => handleEdit(meeting)} className="w-full px-3 py-1.5 bg-gray-100 text-gray-600 text-[11px] font-bold rounded-lg hover:bg-gray-200 transition-colors text-center">
+                            Edit
+                          </button>
                         </>
                       )}
-
-                      {meeting.status === 'done' && (
-                         <button onClick={() => handleDelete(meeting.id)} className="p-2.5 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors">
-                           <Trash2 size={20} />
-                         </button>
+                      {meeting.status !== 'done' && (
+                        <button onClick={() => setConfirmDeleteId(meeting.id)} className="w-full px-3 py-1.5 bg-red-50 text-red-500 text-[11px] font-bold rounded-lg hover:bg-red-100 transition-colors text-center">
+                          Hapus
+                        </button>
                       )}
                     </div>
 

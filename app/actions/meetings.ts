@@ -122,7 +122,8 @@ export async function uploadMemories(meetingId: number, formData: FormData) {
 export async function uploadManualMemories(formData: FormData) {
   const files = formData.getAll('files') as File[]
   const caption = formData.get('caption') as string
-  const manualDate = formData.get('manual_date') as string // <-- Tangkap tanggal manual
+  const manualDate = formData.get('manual_date') as string
+  const title = formData.get('title') as string 
   
   if (!files || files.length === 0) {
     throw new Error('Pilih minimal satu foto.')
@@ -139,12 +140,12 @@ export async function uploadManualMemories(formData: FormData) {
 
     if (uploadError) throw new Error(uploadError.message)
 
-    // Simpan ke database TANPA meeting_id (NULL), dan timpa created_at pakai tanggal manual
     const { error: dbError } = await supabaseAdmin.from('memories').insert({
       media_type: 'photo',
       storage_path: filePath,
       caption: caption,
-      created_at: manualDate ? new Date(manualDate).toISOString() : new Date().toISOString(), // <-- Pakai tanggal manual
+      title: title || 'Kenangan Manis', // <-- Pastikan masuk ke sini
+      created_at: manualDate ? new Date(manualDate).toISOString() : new Date().toISOString(),
     })
 
     if (dbError) throw new Error(dbError.message)

@@ -3,13 +3,14 @@
 import { useState, useEffect, useMemo } from 'react'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { X, Image as ImageIcon, Calendar, Filter } from 'lucide-react'
+import { X, Image as ImageIcon } from 'lucide-react'
 
 type Memory = {
   id: number
   storage_path: string
   caption: string
-  created_at: string // Kita pakai tanggal upload foto
+  title?: string
+  created_at: string
   meetings: {
     title: string
     start_at: string
@@ -20,7 +21,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [selectedImage, setSelectedImage] = useState<Memory | null>(null)
   
-  // State untuk filter
   const [selectedMonth, setSelectedMonth] = useState<string>('all')
 
   useEffect(() => {
@@ -38,53 +38,56 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
     if (initialMemories.length > 0) fetchUrls()
   }, [initialMemories])
 
-  // LOGIKA BARU: Mengambil bulan dari `created_at` (Tanggal Upload)
   const availableMonths = useMemo(() => {
     const months = new Set<string>()
     initialMemories.forEach(mem => {
-      if (mem.created_at) {
-        // Ambil 7 karakter pertama (YYYY-MM)
-        const yearMonth = String(mem.created_at).substring(0, 7)
+      const meetingInfo = mem.meetings?.[0]
+      const dateString = meetingInfo?.start_at || mem.created_at
+      
+      if (dateString) {
+        const yearMonth = String(dateString).substring(0, 7)
         if (yearMonth.includes('-')) months.add(yearMonth)
       }
     })
     return Array.from(months).sort().reverse()
   }, [initialMemories])
 
-  // Filter berdasarkan bulan upload
   const filteredMemories = useMemo(() => {
     if (selectedMonth === 'all') return initialMemories
     return initialMemories.filter(mem => {
-      if (!mem.created_at) return false
-      return String(mem.created_at).substring(0, 7) === selectedMonth
+      const meetingInfo = mem.meetings?.[0]
+      const dateString = meetingInfo?.start_at || mem.created_at
+      if (!dateString) return false
+      return String(dateString).substring(0, 7) === selectedMonth
     })
   }, [initialMemories, selectedMonth])
 
   if (initialMemories.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-blue-200">
-        <ImageIcon size={48} className="text-blue-200 mb-4" />
+      <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+        <ImageIcon size={48} className="text-gray-300 mb-4" />
         <h3 className="text-lg font-bold text-gray-700">Belum ada kenangan</h3>
-        <p className="text-sm text-gray-500">Foto yang kamu upload di halaman Meetings akan muncul di sini.</p>
+        <p className="text-sm text-gray-500">Foto yang kamu upload akan muncul di sini.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       
-      {/* TAMPILAN FILTER BARU (TOMBOL BULAT) */}
-      <div className="flex flex-wrap gap-2">
+      {/* Filter Bulan (Pill Buttons / Kapsul) */}
+      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
         <button
-  onClick={() => setSelectedMonth('all')}
-  className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${
-    selectedMonth === 'all'
-      ? 'bg-[var(--theme-primary)] text-white shadow-md'
-      : 'bg-white text-gray-500 border border-gray-200 hover:bg-[var(--theme-primary-light)]'
-  }`}
->
+          onClick={() => setSelectedMonth('all')}
+          className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${
+            selectedMonth === 'all'
+              ? 'bg-[var(--theme-primary)] text-white shadow-md'
+              : 'bg-white text-gray-500 border border-gray-200 hover:bg-[var(--theme-primary-light)]'
+          }`}
+        >
           Semua Foto
         </button>
+        
         {availableMonths.map(month => {
           const [year, m] = month.split('-')
           const dateObj = new Date(parseInt(year), parseInt(m) - 1, 1)
@@ -92,10 +95,10 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
             <button
               key={month}
               onClick={() => setSelectedMonth(month)}
-              className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm capitalize ${
+              className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm capitalize ${
                 selectedMonth === month
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'bg-white text-gray-500 border border-gray-200 hover:bg-blue-50'
+                  ? 'bg-[var(--theme-primary)] text-white shadow-md'
+                  : 'bg-white text-gray-500 border border-gray-200 hover:bg-[var(--theme-primary-light)]'
               }`}
             >
               {format(dateObj, 'MMMM yyyy', { locale: localeId })}
@@ -107,55 +110,50 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
       {/* Grid Masonry */}
       <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
         {filteredMemories.map((mem) => {
-  const meetingInfo = mem.meetings?.[0]
-  
-  // Ambil tanggal (prioritas tanggal jadwal, kalau kosong pakai tanggal upload)
-  const dateToShow = meetingInfo?.start_at || mem.created_at
-  const displayDate = format(new Date(dateToShow), 'dd MMMM yyyy', { locale: localeId })
-  const displayTitle = meetingInfo?.title || 'Kenangan Manis'
+          const meetingInfo = mem.meetings?.[0]
+          const dateToShow = meetingInfo?.start_at || mem.created_at
+          
+          // Logika Judul: Ambil dari jadwal, kalau nggak ada ambil dari input manual, kalau nggak ada juga baru "Tanpa Judul"
+          const displayTitle = meetingInfo?.title || mem.title || 'Tanpa Judul'
 
-  return (
-    <div 
-      key={mem.id} 
-      onClick={() => setSelectedImage(mem)}
-      className="break-inside-avoid relative group rounded-3xl overflow-hidden cursor-pointer bg-gray-200 mb-4 shadow-sm"
-    >
-      {imageUrls[mem.storage_path] ? (
-        <img 
-          src={imageUrls[mem.storage_path]} 
-          alt="Memory" 
-          className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105" 
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            target.parentElement?.classList.add('hidden');
-          }}
-        />
-      ) : (
-        <div className="w-full aspect-[3/4] animate-pulse bg-gray-300" />
-      )}
-      
-      {/* Overlay Gradient ala Stitch */}
-<div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
-  
-  {/* Logika Tanggal: Kalau ada jadwal pakai tanggal jadwal, kalau enggak pakai created_at */}
-  <p className="text-white/80 text-xs font-semibold mb-1">
-    {meetingInfo?.start_at 
-      ? format(new Date(meetingInfo.start_at), 'dd MMMM yyyy', { locale: localeId }) 
-      : format(new Date(mem.created_at), 'dd MMMM yyyy', { locale: localeId })}
-  </p>
-  
-  <h4 className="text-white font-bold text-lg leading-tight line-clamp-2">
-    {meetingInfo?.title || 'Kenangan Manis'}
-  </h4>
-  
-  {mem.caption && (
-    <p className="text-gray-200 text-sm mt-2 line-clamp-2">"{mem.caption}"</p>
-  )}
-</div>
-    </div>
-  )
-})}
+          return (
+            <div 
+              key={mem.id} 
+              onClick={() => setSelectedImage(mem)}
+              className="break-inside-avoid relative group rounded-3xl overflow-hidden cursor-pointer bg-gray-100 mb-4 shadow-sm border border-gray-100"
+            >
+              {imageUrls[mem.storage_path] ? (
+                <img 
+                  src={imageUrls[mem.storage_path]} 
+                  alt={displayTitle} 
+                  className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105" 
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.parentElement?.classList.add('hidden');
+                  }}
+                />
+              ) : (
+                <div className="w-full aspect-[3/4] animate-pulse bg-gray-200" />
+              )}
+              
+              {/* Overlay Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
+                <p className="text-white/80 text-xs font-semibold mb-1">
+                  {format(new Date(dateToShow), 'dd MMMM yyyy', { locale: localeId })}
+                </p>
+                
+                <h4 className="text-white font-bold text-lg leading-tight line-clamp-2">
+                  {displayTitle}
+                </h4>
+                
+                {mem.caption && (
+                  <p className="text-gray-200 text-sm mt-2 line-clamp-2">"{mem.caption}"</p>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Lightbox */}
@@ -183,13 +181,11 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
             
             <div className="text-center bg-white/10 backdrop-blur-md px-8 py-4 rounded-3xl border border-white/20">
               <h3 className="text-white font-bold text-xl mb-1">
-                {selectedImage.meetings?.[0]?.title || 'Tanpa Judul'}
+                {selectedImage.meetings?.[0]?.title || selectedImage.title || 'Tanpa Judul'}
               </h3>
-              {selectedImage.meetings?.[0]?.start_at && (
-                <p className="text-blue-200 text-sm font-medium">
-                  {format(new Date(selectedImage.meetings[0].start_at), 'EEEE, dd MMMM yyyy', { locale: localeId })}
-                </p>
-              )}
+              <p className="text-gray-300 text-sm font-medium">
+                {format(new Date(selectedImage.meetings?.[0]?.start_at || selectedImage.created_at), 'EEEE, dd MMMM yyyy', { locale: localeId })}
+              </p>
               {selectedImage.caption && (
                 <div className="mt-3 bg-black/30 px-4 py-2 rounded-xl inline-block">
                   <p className="text-white italic text-sm">"{selectedImage.caption}"</p>
