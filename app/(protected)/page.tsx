@@ -86,22 +86,22 @@ export default async function DashboardPage() {
         initialMoodB={settings?.mood_b || 50}
       />
 
-      {/* CARD ANNIVERSARY */}
+            {/* CARD ROMANTIS (Hitungan Hari) */}
       {settings?.anniversary_date && (
-        <div className="bg-gradient-to-br from-[var(--theme-gradient-from)] via-[var(--theme-primary)] to-[var(--theme-gradient-to)] text-white p-5 md:p-8 rounded-3xl md:rounded-[2rem] shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 transition-all duration-500">
-          <div className="relative z-10 text-center md:text-left">
+        <div className="bg-gradient-to-br from-[var(--theme-gradient-from)] via-[var(--theme-primary)] to-[var(--theme-gradient-to)] text-white p-6 md:p-8 rounded-[2rem] shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between md:items-center gap-6 transition-all duration-500">
+          <div className="relative z-10 text-center md:text-left flex-1">
             <h3 className="text-[10px] md:text-sm font-bold text-white/80 mb-1 md:mb-2 uppercase tracking-wider">
               Udah bareng selama
             </h3>
             <div className="text-4xl md:text-6xl font-black mb-1 md:mb-2 tracking-tighter drop-shadow-sm">
               {daysTogether} <span className="text-lg md:text-2xl font-semibold drop-shadow-none">Hari</span>
             </div>
-            <p className="text-white/90 font-medium text-[11px] md:text-base">
+            <p className="text-white/90 font-medium text-xs md:text-base">
               Sejak {format(new Date(settings.anniversary_date), 'dd MMMM yyyy', { locale: localeId })}
             </p>
           </div>
           
-          <div className="relative z-10 bg-white/20 backdrop-blur-md border border-white/30 p-3 md:p-5 rounded-2xl md:rounded-3xl text-center min-w-[120px] md:min-w-[160px]">
+          <div className="relative z-10 bg-white/20 backdrop-blur-md border border-white/30 p-4 rounded-2xl text-center w-full md:w-auto md:min-w-[160px]">
             <p className="text-[9px] md:text-xs text-white font-bold mb-1 uppercase tracking-wide">Anniversary ke-{nextAnniversaryYear}</p>
             <div className="text-xl md:text-3xl font-bold">{daysToAnniversary} <span className="text-xs md:text-sm font-medium">Hari lagi</span></div>
           </div>

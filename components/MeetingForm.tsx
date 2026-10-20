@@ -13,7 +13,7 @@ type Meeting = {
   start_at: string
   end_at: string
   status: string
-  notes?: string // <-- Kita bikin opsional (pakai ?) biar sama kayak di MeetingList
+  notes?: string 
 }
 
 export default function MeetingForm({ 
@@ -75,6 +75,9 @@ export default function MeetingForm({
     }
   }
 
+  // Class CSS untuk Input biar Teks Hitam Tegas & Placeholder Lebih Jelas
+  const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] font-medium"
+
   return (
     <form action={handleSubmit} className="space-y-5">
       <div>
@@ -84,7 +87,7 @@ export default function MeetingForm({
           name="title"
           defaultValue={initialData?.title}
           required
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]"
+          className={inputClass}
           placeholder="Misal: Anniversary Dinner"
         />
       </div>
@@ -99,7 +102,7 @@ export default function MeetingForm({
               dateFormat="dd MMMM yyyy"
               locale="id"
               placeholderText="Pilih tanggal"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] text-sm cursor-pointer"
+              className={`${inputClass} cursor-pointer`}
               required
             />
             <Calendar size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -111,7 +114,7 @@ export default function MeetingForm({
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="w-full px-2 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] text-sm text-center"
+            className={`${inputClass} text-center`}
             required
           />
         </div>
@@ -123,7 +126,7 @@ export default function MeetingForm({
           type="text"
           name="location"
           defaultValue={initialData?.location}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]"
+          className={inputClass}
           placeholder="Misal: Restoran Italia"
         />
       </div>
@@ -134,7 +137,7 @@ export default function MeetingForm({
           name="notes"
           defaultValue={initialData?.notes}
           rows={3}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]"
+          className={inputClass}
           placeholder="Misal: Jangan lupa bawa jaket, atau dresscode warna biru..."
         />
       </div>
