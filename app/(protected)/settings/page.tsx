@@ -17,12 +17,11 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        {/* Header dengan Font Slab Serif */}
-        <h2 className="text-4xl md:text-5xl font-black text-gray-800 tracking-tight font-slab">
-          Setelan Kita ⚙️
+            <header>
+        <h2 className="text-2xl md:text-4xl font-black text-gray-800 tracking-tight font-slab">
+          Biodata Kita
         </h2>
-        <p className="text-gray-500 font-medium mt-2 text-lg">
+        <p className="text-gray-500 font-medium mt-1 text-sm md:text-lg">
           Ubah nama, tanggal jadian, atau warna tema.
         </p>
       </header>

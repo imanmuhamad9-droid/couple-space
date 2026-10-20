@@ -279,10 +279,11 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
         </div>
       )}
 
-      {/* Modal Edit/Tambah Form */}
+          {/* Modal Edit/Tambah Form */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-start md:items-center justify-center p-4 pt-10 md:pt-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
+          {/* Tambahin pb-32 biar bisa di-scroll sampe bawah, nggak ketutup bottom bar */}
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl mb-32 md:mb-0 relative">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-800">{editingMeeting ? 'Edit Jadwal' : 'Tambah Jadwal Baru'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors"><X size={20} /></button>

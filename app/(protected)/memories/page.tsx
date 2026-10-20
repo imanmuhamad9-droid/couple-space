@@ -6,9 +6,10 @@ import { Plus } from 'lucide-react'
 export const instant = false
 
 export default async function MemoriesPage() {
+  // Pastikan kolom 'title' ikut ditarik dari database
   const { data: memories, error } = await supabaseAdmin
     .from('memories')
-        .select(`
+    .select(`
       id,
       storage_path,
       caption,
@@ -27,16 +28,16 @@ export default async function MemoriesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header dengan Tombol Upload */}
+      {/* Header Galeri dengan Font Slab */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-        <h2 className="text-4xl md:text-5xl font-black text-gray-800 font-slab">Galeri Kita 📸</h2>
-        <p className="text-gray-500 font-medium mt-2 text-lg">Semua momen indah yang pernah kita lewati.</p>
-      </div>
+        <div>
+          <h2 className="text-2xl md:text-4xl font-black text-gray-800 font-slab">Galeri Kita 📸</h2>
+          <p className="text-gray-500 font-medium mt-1 text-sm md:text-lg">Semua momen indah yang pernah kita lewati.</p>
+        </div>
         
         <Link 
           href="/memories/upload" 
-          className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-6 py-3 rounded-2xl text-sm font-bold hover:scale-105 transition-transform shadow-md w-fit"
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--theme-gradient-from)] to-[var(--theme-gradient-to)] text-white px-6 py-3 rounded-2xl text-sm font-bold hover:scale-105 transition-transform shadow-md w-fit"
         >
           <Plus size={18} /> Upload Foto
         </Link>
