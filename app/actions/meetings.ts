@@ -10,6 +10,7 @@ export async function addMeeting(formData: FormData) {
   const location = formData.get('location') as string
   const start_at = formData.get('start_at') as string
   const end_at = formData.get('end_at') as string
+  const notes = formData.get('notes') as string // <-- Tambahan Notes
 
   const { error } = await supabaseAdmin.from('meetings').insert({
     title,
@@ -17,11 +18,12 @@ export async function addMeeting(formData: FormData) {
     location,
     start_at: new Date(start_at).toISOString(),
     end_at: end_at ? new Date(end_at).toISOString() : null,
+    notes, // <-- Simpan Notes
   })
 
   if (error) throw new Error(error.message)
   revalidatePath('/meetings')
-  revalidatePath('/') // Refresh dashboard juga
+  revalidatePath('/')
 }
 
 // 2. UPDATE (Edit Jadwal)
@@ -32,6 +34,7 @@ export async function updateMeeting(id: number, formData: FormData) {
   const start_at = formData.get('start_at') as string
   const end_at = formData.get('end_at') as string
   const status = formData.get('status') as string
+  const notes = formData.get('notes') as string // <-- Tambahan Notes
 
   const { error } = await supabaseAdmin
     .from('meetings')
@@ -42,6 +45,7 @@ export async function updateMeeting(id: number, formData: FormData) {
       start_at: new Date(start_at).toISOString(),
       end_at: end_at ? new Date(end_at).toISOString() : null,
       status,
+      notes, // <-- Update Notes
     })
     .eq('id', id)
 
@@ -94,7 +98,7 @@ export async function uploadMemories(meetingId: number, formData: FormData) {
       meeting_id: meetingId,
       media_type: 'photo',
       storage_path: filePath,
-      caption: caption, // <-- Tambahan untuk simpan catatan
+      caption: caption,
     })
 
     if (dbError) throw new Error(dbError.message)
@@ -111,5 +115,42 @@ export async function uploadMemories(meetingId: number, formData: FormData) {
   if (updateError) throw new Error(updateError.message)
 
   revalidatePath('/meetings')
+  revalidatePath('/')
+}
+
+// 6. UPLOAD MANUAL DARI GALERI (Tanpa terikat jadwal)
+export async function uploadManualMemories(formData: FormData) {
+  const files = formData.getAll('files') as File[]
+  const caption = formData.get('caption') as string
+  const manualDate = formData.get('manual_date') as string // <-- Tangkap tanggal manual
+  
+  if (!files || files.length === 0) {
+    throw new Error('Pilih minimal satu foto.')
+  }
+
+  const uploadPromises = files.map(async (file) => {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    const filePath = `manual-upload/${fileName}`
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('memories')
+      .upload(filePath, file)
+
+    if (uploadError) throw new Error(uploadError.message)
+
+    // Simpan ke database TANPA meeting_id (NULL), dan timpa created_at pakai tanggal manual
+    const { error: dbError } = await supabaseAdmin.from('memories').insert({
+      media_type: 'photo',
+      storage_path: filePath,
+      caption: caption,
+      created_at: manualDate ? new Date(manualDate).toISOString() : new Date().toISOString(), // <-- Pakai tanggal manual
+    })
+
+    if (dbError) throw new Error(dbError.message)
+  })
+
+  await Promise.all(uploadPromises)
+  revalidatePath('/memories')
   revalidatePath('/')
 }

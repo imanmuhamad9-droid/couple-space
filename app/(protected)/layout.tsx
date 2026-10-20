@@ -1,19 +1,26 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import ClientLayout from './ClientLayout'
+import { ThemeProvider } from '@/components/ThemeProvider'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
-// Baris ini untuk mematikan peringatan "Blocking Route" di Next.js 15/16
 export const instant = false
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
   const session = cookieStore.get('session')?.value
 
-  // Kalau nggak ada cookie session (belum login), tendang ke halaman login
   if (!session) {
     redirect('/login')
   }
 
-  // Kalau ada session, tampilkan UI-nya
-  return <ClientLayout>{children}</ClientLayout>
+  // Ambil tema dari database
+  const { data: settings } = await supabaseAdmin.from('settings').select('theme_color').eq('id', 1).single()
+  const theme = (settings?.theme_color as any) || 'blue'
+
+  return (
+    <ThemeProvider initialTheme={theme}>
+      <ClientLayout>{children}</ClientLayout>
+    </ThemeProvider>
+  )
 }

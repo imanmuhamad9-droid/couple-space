@@ -52,3 +52,39 @@ body {
 .react-datepicker__time-list-item--selected {
   background-color: black !important;
 }
+
+:root {
+  /* Warna Default (Biru) */
+  --theme-primary: #3b82f6; /* blue-500 */
+  --theme-primary-light: #eff6ff; /* blue-50 */
+  --theme-primary-dark: #1d4ed8; /* blue-700 */
+  --theme-gradient-from: #3b82f6;
+  --theme-gradient-to: #22d3ee;
+}
+
+/* Tema Pink */
+[data-theme="pink"] {
+  --theme-primary: #ec4899;
+  --theme-primary-light: #fdf2f8;
+  --theme-primary-dark: #be185d;
+  --theme-gradient-from: #ec4899;
+  --theme-gradient-to: #f472b6;
+}
+
+/* Tema Hijau */
+[data-theme="green"] {
+  --theme-primary: #10b981;
+  --theme-primary-light: #ecfdf5;
+  --theme-primary-dark: #047857;
+  --theme-gradient-from: #10b981;
+  --theme-gradient-to: #34d399;
+}
+
+/* Tema Ungu */
+[data-theme="purple"] {
+  --theme-primary: #8b5cf6;
+  --theme-primary-light: #f5f3ff;
+  --theme-primary-dark: #6d28d9;
+  --theme-gradient-from: #8b5cf6;
+  --theme-gradient-to: #a78bfa;
+}

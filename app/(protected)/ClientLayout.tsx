@@ -24,12 +24,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="flex h-screen bg-[#F0F8FF]"> {/* Background Biru Muda Sangat Cerah (AliceBlue) */}
-      
+    <div className="flex h-screen bg-[var(--theme-primary-light)] transition-colors duration-500">
       {/* Sidebar Desktop */}
-      <aside className="hidden md:flex w-64 flex-col bg-white p-6 border-r border-blue-50 justify-between rounded-r-3xl shadow-sm">
+      <aside className="hidden md:flex w-64 flex-col bg-white p-6 border-r border-gray-100 justify-between rounded-r-3xl shadow-sm">
         <div>
-          <h1 className="text-2xl font-extrabold mb-10 tracking-tight text-blue-600">Our Space.</h1>
+          <h1 className="text-2xl font-extrabold mb-10 tracking-tight text-[var(--theme-primary)]">Our Space.</h1>
           <nav className="space-y-2">
             {menuItems.map((item) => {
               const isActive = pathname === item.path
@@ -39,8 +38,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                   href={item.path}
                   className={`flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 font-semibold ${
                     isActive 
-                      ? 'bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-md' 
-                      : 'hover:bg-blue-50 text-gray-500 hover:text-blue-600'
+                      ? 'bg-[var(--theme-primary)] text-white shadow-md' 
+                      : 'hover:bg-[var(--theme-primary-light)] text-gray-500 hover:text-[var(--theme-primary)]'
                   }`}
                 >
                   <item.icon size={20} />
@@ -62,12 +61,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-6 md:p-10 pb-28 md:pb-10">
-        <div className="max-w-4xl mx-auto">
+        <div className="w-full max-w-full mx-auto">
           {children}
         </div>
       </main>
 
-      {/* Bottom Nav Mobile (Melayang) */}
+      {/* Bottom Nav Mobile */}
       <nav className="md:hidden fixed bottom-6 left-6 right-6 bg-white/80 backdrop-blur-lg border border-white/30 shadow-xl flex justify-around p-4 rounded-3xl z-50">
         {menuItems.map((item) => {
           const isActive = pathname === item.path
@@ -76,7 +75,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               key={item.path}
               href={item.path}
               className={`flex flex-col items-center gap-1 p-2 transition-colors ${
-                isActive ? 'text-blue-500' : 'text-gray-400 hover:text-blue-400'
+                isActive ? 'text-[var(--theme-primary)]' : 'text-gray-400 hover:text-[var(--theme-primary)]'
               }`}
             >
               <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />

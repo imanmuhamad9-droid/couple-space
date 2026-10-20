@@ -76,13 +76,13 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
       {/* TAMPILAN FILTER BARU (TOMBOL BULAT) */}
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={() => setSelectedMonth('all')}
-          className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${
-            selectedMonth === 'all'
-              ? 'bg-blue-500 text-white shadow-md'
-              : 'bg-white text-gray-500 border border-gray-200 hover:bg-blue-50'
-          }`}
-        >
+  onClick={() => setSelectedMonth('all')}
+  className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${
+    selectedMonth === 'all'
+      ? 'bg-[var(--theme-primary)] text-white shadow-md'
+      : 'bg-white text-gray-500 border border-gray-200 hover:bg-[var(--theme-primary-light)]'
+  }`}
+>
           Semua Foto
         </button>
         {availableMonths.map(month => {
@@ -107,40 +107,55 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: Me
       {/* Grid Masonry */}
       <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
         {filteredMemories.map((mem) => {
-          const meetingInfo = mem.meetings?.[0]
+  const meetingInfo = mem.meetings?.[0]
+  
+  // Ambil tanggal (prioritas tanggal jadwal, kalau kosong pakai tanggal upload)
+  const dateToShow = meetingInfo?.start_at || mem.created_at
+  const displayDate = format(new Date(dateToShow), 'dd MMMM yyyy', { locale: localeId })
+  const displayTitle = meetingInfo?.title || 'Kenangan Manis'
 
-          return (
-            <div 
-              key={mem.id} 
-              onClick={() => setSelectedImage(mem)}
-              className="break-inside-avoid relative group rounded-3xl overflow-hidden cursor-pointer bg-blue-50 min-h-[100px] shadow-sm border border-blue-100/50"
-            >
-              {imageUrls[mem.storage_path] ? (
-                <img 
-                  src={imageUrls[mem.storage_path]} 
-                  alt="Memory" 
-                  className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105" 
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.parentElement?.classList.add('hidden');
-                  }}
-                />
-              ) : (
-                <div className="w-full aspect-square animate-pulse bg-blue-100" />
-              )}
-              
-              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                <p className="text-white font-bold text-sm line-clamp-2">{meetingInfo?.title || 'Tanpa Judul'}</p>
-                {meetingInfo?.start_at && (
-                  <p className="text-blue-200 text-xs font-medium mt-1">
-                    {format(new Date(meetingInfo.start_at), 'dd MMM yyyy', { locale: localeId })}
-                  </p>
-                )}
-              </div>
-            </div>
-          )
-        })}
+  return (
+    <div 
+      key={mem.id} 
+      onClick={() => setSelectedImage(mem)}
+      className="break-inside-avoid relative group rounded-3xl overflow-hidden cursor-pointer bg-gray-200 mb-4 shadow-sm"
+    >
+      {imageUrls[mem.storage_path] ? (
+        <img 
+          src={imageUrls[mem.storage_path]} 
+          alt="Memory" 
+          className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105" 
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            target.parentElement?.classList.add('hidden');
+          }}
+        />
+      ) : (
+        <div className="w-full aspect-[3/4] animate-pulse bg-gray-300" />
+      )}
+      
+      {/* Overlay Gradient ala Stitch */}
+<div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
+  
+  {/* Logika Tanggal: Kalau ada jadwal pakai tanggal jadwal, kalau enggak pakai created_at */}
+  <p className="text-white/80 text-xs font-semibold mb-1">
+    {meetingInfo?.start_at 
+      ? format(new Date(meetingInfo.start_at), 'dd MMMM yyyy', { locale: localeId }) 
+      : format(new Date(mem.created_at), 'dd MMMM yyyy', { locale: localeId })}
+  </p>
+  
+  <h4 className="text-white font-bold text-lg leading-tight line-clamp-2">
+    {meetingInfo?.title || 'Kenangan Manis'}
+  </h4>
+  
+  {mem.caption && (
+    <p className="text-gray-200 text-sm mt-2 line-clamp-2">"{mem.caption}"</p>
+  )}
+</div>
+    </div>
+  )
+})}
       </div>
 
       {/* Lightbox */}

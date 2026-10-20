@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { Plus, Edit2, Trash2, CheckCircle2, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Edit2, Trash2, CheckCircle2, X, ChevronLeft, ChevronRight, Clock, MapPin, CalendarDays, Quote } from 'lucide-react'
 import MeetingForm from '@/components/MeetingForm'
 import MemoryUploadForm from '@/components/MemoryUploadForm'
 import { deleteMeeting } from '@/app/actions/meetings'
@@ -16,6 +16,7 @@ type Meeting = {
   start_at: string
   end_at: string
   status: string
+  notes?: string
   memories?: { id: number, storage_path: string, caption: string }[] 
 }
 
@@ -25,20 +26,17 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
   const [selectedMeetingId, setSelectedMeetingId] = useState<number | null>(null)
   const [editingMeeting, setEditingMeeting] = useState<Meeting | undefined>(undefined)
   
-  // State Filter & Pagination
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'done'>('upcoming')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10 // 10 Kotak Tanggal per halaman
+  const itemsPerPage = 10 
   
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
 
-  // Reset halaman ke 1 kalau ganti filter
   useEffect(() => {
     setCurrentPage(1)
   }, [filter])
 
-  // Ambil URL gambar
   useEffect(() => {
     const fetchUrls = async () => {
       const newUrls: Record<string, string> = {}
@@ -59,7 +57,6 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
     fetchUrls()
   }, [initialMeetings])
 
-  // LOGIKA FILTER & GROUPING
   const getProcessedMeetings = () => {
     let filtered = initialMeetings
     if (filter === 'upcoming') {
@@ -68,14 +65,12 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
       filtered = initialMeetings.filter(m => m.status === 'done')
     }
 
-    // Urutkan: planned di atas, lalu berdasarkan tanggal
     filtered.sort((a, b) => {
       if (a.status === 'planned' && b.status !== 'planned') return -1
       if (a.status !== 'planned' && b.status === 'planned') return 1
       return new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
     })
 
-    // Grouping per tanggal
     const groups: Record<string, Meeting[]> = {}
     filtered.forEach(m => {
       const dateStr = format(parseISO(m.start_at), 'yyyy-MM-dd')
@@ -83,7 +78,6 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
       groups[dateStr].push(m)
     })
 
-    // Pagination Logic
     const groupedArray = Object.entries(groups)
     const totalPages = Math.ceil(groupedArray.length / itemsPerPage)
     const paginatedGroups = groupedArray.slice(
@@ -118,8 +112,7 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
   }
 
   return (
-    <div className="space-y-6">
-      {/* Lightbox */}
+    <div className="space-y-8">
       {lightboxImage && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 cursor-zoom-out backdrop-blur-sm"
@@ -134,28 +127,28 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
 
       {/* Header & Filter */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex gap-2 bg-blue-50 p-1.5 rounded-full w-fit">
+        <div className="flex gap-2 bg-white p-1.5 rounded-full w-fit border border-gray-100 shadow-sm">
           <button 
             onClick={() => setFilter('upcoming')} 
-            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'upcoming' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-500'}`}
+            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'upcoming' ? 'bg-[var(--theme-primary)] text-white shadow-md' : 'text-gray-500 hover:text-[var(--theme-primary)]'}`}
           >
             Akan Datang
           </button>
           <button 
             onClick={() => setFilter('done')} 
-            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'done' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-500'}`}
+            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'done' ? 'bg-[var(--theme-primary)] text-white shadow-md' : 'text-gray-500 hover:text-[var(--theme-primary)]'}`}
           >
             Selesai
           </button>
           <button 
             onClick={() => setFilter('all')} 
-            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'all' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-500 hover:text-blue-500'}`}
+            className={`px-5 py-2.5 text-sm font-bold rounded-full transition-all ${filter === 'all' ? 'bg-[var(--theme-primary)] text-white shadow-md' : 'text-gray-500 hover:text-[var(--theme-primary)]'}`}
           >
             Semua
           </button>
         </div>
 
-        <button onClick={handleAddNew} className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-6 py-3 rounded-2xl text-sm font-bold hover:scale-105 transition-transform shadow-md">
+        <button onClick={handleAddNew} className="flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--theme-gradient-from)] to-[var(--theme-gradient-to)] text-white px-6 py-3 rounded-2xl text-sm font-bold hover:scale-105 transition-transform shadow-md">
           <Plus size={18} /> Tambah Jadwal
         </button>
       </div>
@@ -163,51 +156,69 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
       {/* List Meetings (Grouped) */}
       <div className="space-y-6">
         {paginatedGroups.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-blue-200">
+          <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-gray-200">
             <p className="text-gray-500 font-medium">Belum ada jadwal di kategori ini.</p>
           </div>
         ) : (
           paginatedGroups.map(([dateStr, meetingsOnDate]) => (
-            <div key={dateStr} className="bg-white rounded-3xl shadow-sm border border-blue-50 overflow-hidden">
-              {/* Header Tanggal */}
-              <div className="bg-blue-50/50 px-6 py-4 border-b border-blue-50 flex justify-between items-center">
-                <h3 className="font-bold text-blue-900">
-                  {format(new Date(dateStr), 'EEEE, dd MMMM yyyy', { locale: localeId })}
-                </h3>
+            <div key={dateStr} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+              
+              {/* HEADER TANGGAL (Warna Dinamis) */}
+              <div className="bg-[var(--theme-primary)] px-6 py-4 flex justify-between items-center transition-colors duration-500">
+                <div className="flex items-center gap-3 text-white">
+                  <CalendarDays size={22} />
+                  <h3 className="font-bold text-lg">
+                    {format(new Date(dateStr), 'EEEE, dd MMMM yyyy', { locale: localeId })}
+                  </h3>
+                </div>
                 {format(new Date(), 'yyyy-MM-dd') === dateStr && (
-                  <span className="text-xs font-bold text-white bg-blue-500 px-3 py-1 rounded-full shadow-sm">HARI INI</span>
+                  <span className="text-xs font-bold text-[var(--theme-primary)] bg-white px-3 py-1.5 rounded-full shadow-sm">HARI INI</span>
                 )}
               </div>
               
-              {/* List Acara di Tanggal Tersebut */}
-              <div className="divide-y divide-gray-50">
+              {/* LIST ACARA */}
+              <div className="divide-y divide-gray-100">
                 {meetingsOnDate.map(meeting => (
-                  <div key={meeting.id} className="p-6 flex flex-col md:flex-row gap-5 justify-between md:items-start hover:bg-blue-50/30 transition-colors">
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-3 mb-2">
-                        <h4 className="font-bold text-lg text-gray-800">{meeting.title}</h4>
-                        <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wider ${
-                          meeting.status === 'done' ? 'bg-green-100 text-green-700' :
-                          meeting.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                        }`}>
-                          {meeting.status.toUpperCase()}
+                  <div key={meeting.id} className="p-6 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8 hover:bg-gray-50/50 transition-colors">
+                    
+                    {/* Kiri: Info & Foto */}
+                    <div className="flex-1 space-y-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-xs font-bold">
+                          <Clock size={14} /> {format(parseISO(meeting.start_at), 'HH:mm')} WIB
                         </span>
-                        <span className="text-xs text-gray-600 font-bold bg-gray-100 px-2.5 py-1 rounded-md">
-                          {format(parseISO(meeting.start_at), 'HH:mm')} WIB
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                          meeting.status === 'done' ? 'bg-green-100 text-green-700' : 'bg-[var(--theme-primary-light)] text-[var(--theme-primary)]'
+                        }`}>
+                          {meeting.status === 'done' ? 'SELESAI' : 'TERENCANA'}
                         </span>
                       </div>
-                      {meeting.location && <p className="text-sm text-gray-600 font-medium">📍 {meeting.location}</p>}
-                      {meeting.description && <p className="text-sm text-gray-500 mt-2">{meeting.description}</p>}
 
-                      {/* Galeri Foto */}
+                      <h4 className="font-bold text-2xl text-gray-800 leading-tight">{meeting.title}</h4>
+
+                      {meeting.location && (
+                        <div className="flex items-start gap-2 text-sm text-gray-600 font-medium">
+                          <MapPin size={18} className="mt-0.5 text-[var(--theme-primary)] flex-shrink-0" />
+                          <span>{meeting.location}</span>
+                        </div>
+                      )}
+
+                      {meeting.notes && (
+                        <div className="flex items-start gap-2 text-sm text-gray-500 italic bg-[var(--theme-primary-light)]/50 p-3 rounded-xl border border-[var(--theme-primary-light)]">
+                          <Quote size={18} className="mt-0.5 text-[var(--theme-primary)] flex-shrink-0" />
+                          <p>{meeting.notes}</p>
+                        </div>
+                      )}
+
                       {meeting.memories && meeting.memories.length > 0 && (
-                        <div className="mt-4">
+                        <div className="pt-2">
+                          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Inspirasi Visual & Memori</p>
                           <div className="flex gap-3 overflow-x-auto pb-2">
                             {meeting.memories.map((mem) => (
                               <div 
                                 key={mem.id} 
                                 onClick={() => imageUrls[mem.storage_path] && setLightboxImage(imageUrls[mem.storage_path])}
-                                className="relative w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
+                                className="relative w-28 h-20 flex-shrink-0 rounded-[1.25rem] overflow-hidden cursor-pointer hover:opacity-80 transition-opacity shadow-sm border border-gray-100"
                               >
                                 {imageUrls[mem.storage_path] ? (
                                   <img src={imageUrls[mem.storage_path]} alt="Memory" className="object-cover w-full h-full" />
@@ -217,33 +228,39 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
                               </div>
                             ))}
                           </div>
-                          {meeting.memories[0].caption && (
-                            <div className="mt-3 bg-gray-50 p-3 rounded-xl text-sm text-gray-700 italic border border-gray-100">
-                              "{meeting.memories[0].caption}"
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
 
-                    {/* Tombol Aksi */}
-                    <div className="flex items-center gap-2">
+                    {/* Kanan: Tombol Aksi */}
+                    <div className="flex items-center justify-end gap-2 mt-4 md:mt-0 md:w-auto flex-shrink-0 md:border-l md:border-gray-100 md:pl-6">
                       {meeting.status === 'planned' && (
                         <>
-                          <button onClick={() => openUploadModal(meeting.id)} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 text-xs font-bold rounded-xl hover:bg-blue-100 transition-colors">
-                            <CheckCircle2 size={16} /> Done
+                          <button 
+                            onClick={() => openUploadModal(meeting.id)} 
+                            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--theme-primary-light)] text-[var(--theme-primary)] text-sm font-bold rounded-full hover:opacity-80 transition-opacity whitespace-nowrap shadow-sm"
+                          >
+                            <CheckCircle2 size={18} /> Tandai Selesai
                           </button>
-                          <button onClick={() => handleEdit(meeting)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors">
-                            <Edit2 size={20} />
-                          </button>
+                          
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handleEdit(meeting)} className="p-2.5 bg-purple-50 text-purple-600 rounded-full hover:bg-purple-100 transition-colors">
+                              <Edit2 size={20} />
+                            </button>
+                            <button onClick={() => handleDelete(meeting.id)} className="p-2.5 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors">
+                              <Trash2 size={20} />
+                            </button>
+                          </div>
                         </>
                       )}
-                      {meeting.status !== 'done' && (
-                         <button onClick={() => handleDelete(meeting.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+
+                      {meeting.status === 'done' && (
+                         <button onClick={() => handleDelete(meeting.id)} className="p-2.5 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors">
                            <Trash2 size={20} />
                          </button>
                       )}
                     </div>
+
                   </div>
                 ))}
               </div>
@@ -254,27 +271,17 @@ export default function MeetingList({ initialMeetings }: { initialMeetings: Meet
 
       {/* PAGINATION CONTROLS */}
       {totalGroups > itemsPerPage && (
-        <div className="flex justify-between items-center bg-white px-6 py-4 rounded-2xl shadow-sm border border-blue-50 mt-6">
+        <div className="flex justify-between items-center bg-white px-6 py-4 rounded-2xl shadow-sm border border-gray-100 mt-6">
           <p className="text-sm text-gray-500 font-medium">
             Menampilkan <span className="font-bold text-gray-800">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-bold text-gray-800">{Math.min(currentPage * itemsPerPage, totalGroups)}</span> dari <span className="font-bold text-gray-800">{totalGroups}</span> tanggal
           </p>
           
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 text-gray-600 disabled:opacity-50 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-            >
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 text-gray-600 disabled:opacity-50 hover:bg-[var(--theme-primary-light)] hover:text-[var(--theme-primary)] transition-colors">
               <ChevronLeft size={20} />
             </button>
-            <span className="text-sm font-bold text-gray-700">
-              {currentPage} / {totalPages}
-            </span>
-            <button 
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 text-gray-600 disabled:opacity-50 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-            >
+            <span className="text-sm font-bold text-gray-700">{currentPage} / {totalPages}</span>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 text-gray-600 disabled:opacity-50 hover:bg-[var(--theme-primary-light)] hover:text-[var(--theme-primary)] transition-colors">
               <ChevronRight size={20} />
             </button>
           </div>
