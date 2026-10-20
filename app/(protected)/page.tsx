@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { format, differenceInDays, addYears, isAfter } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import Link from 'next/link'
-import { Calendar, MapPin, Heart, ArrowRight, Clock } from 'lucide-react'
+import { Calendar, MapPin, ArrowRight, Clock } from 'lucide-react'
 import DashboardGallery from './DashboardGallery'
 import MeetingThumbnails from './MeetingThumbnails'
 import { connection } from 'next/server'
@@ -68,18 +68,19 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Header Tanpa Ikon Hati */}
       <header>
-        <h2 className="text-3xl font-extrabold text-gray-800 tracking-tight">
-          Hi, {settings?.partner_a_name || 'Kamu'} & {settings?.partner_b_name || 'Pasangan'}!
+        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight">
+          Halo, {settings?.partner_a_name || 'Kamu'} & {settings?.partner_b_name || 'Pasangan'}!
         </h2>
-        <p className="text-gray-500 font-medium mt-1">Senang melihatmu lagi.</p>
+        <p className="text-gray-500 font-medium mt-2">Senang melihatmu lagi.</p>
       </header>
 
       {settings?.anniversary_date && (
         <div className="bg-gradient-to-br from-[var(--theme-gradient-from)] via-[var(--theme-primary)] to-[var(--theme-gradient-to)] text-white p-8 rounded-[2rem] shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6 transition-all duration-500">
           <div className="relative z-10 text-center md:text-left">
-            <h3 className="text-sm font-bold text-white/80 mb-1 flex items-center justify-center md:justify-start gap-2 uppercase tracking-wide">
-              <Heart size={16} fill="currentColor" /> Kita sudah bersama
+            <h3 className="text-sm font-bold text-white/80 mb-2 uppercase tracking-wider">
+              Kita sudah bersama
             </h3>
             <div className="text-6xl font-extrabold mb-2 tracking-tighter drop-shadow-sm">{daysTogether} <span className="text-2xl font-semibold drop-shadow-none">Hari</span></div>
             <p className="text-white/90 font-medium">
@@ -91,14 +92,10 @@ export default async function DashboardPage() {
             <p className="text-xs text-white font-bold mb-1 uppercase tracking-wide">Anniversary ke-{nextAnniversaryYear}</p>
             <div className="text-3xl font-bold">{daysToAnniversary} <span className="text-sm font-medium">Hari lagi</span></div>
           </div>
-          
-          <div className="absolute -right-10 -bottom-10 text-white/10">
-            <Heart size={220} fill="currentColor" />
-          </div>
         </div>
       )}
 
-      <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden group">
+      <div className="bg-white/90 backdrop-blur-sm p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden group">
         <div className="relative z-10">
           <h3 className="text-sm font-bold text-[var(--theme-primary)] mb-3 flex items-center gap-2 uppercase tracking-wide">
             <Calendar size={18} /> Jadwal Terdekat
@@ -134,11 +131,11 @@ export default async function DashboardPage() {
       </div>
 
       <div>
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Jadwal Selanjutnya</h3>
+        <h3 className="text-2xl font-bold text-gray-800 mb-4">Rencana Selanjutnya</h3>
         {otherUpcoming && otherUpcoming.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {otherUpcoming.map((meeting) => (
-              <div key={meeting.id} className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
+              <div key={meeting.id} className="bg-white/90 backdrop-blur-sm p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
                 <div className="mb-4">
                   <h4 className="font-bold text-gray-800 text-lg">{meeting.title}</h4>
                   <p className="text-sm font-medium text-[var(--theme-primary)]">
@@ -153,13 +150,13 @@ export default async function DashboardPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500 italic bg-white p-6 rounded-2xl border border-dashed border-gray-200">Belum ada jadwal lain yang direncanakan.</p>
+          <p className="text-sm text-gray-500 italic bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-dashed border-gray-300">Belum ada jadwal lain yang direncanakan.</p>
         )}
       </div>
 
-      <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col">
+      <div className="bg-white/90 backdrop-blur-sm p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-gray-800">Foto Terbaru</h3>
+          <h3 className="text-2xl font-bold text-gray-800">Foto Terbaru</h3>
           <Link href="/memories" className="text-sm font-bold text-[var(--theme-primary)] hover:opacity-80 hover:underline">Lihat Semua</Link>
         </div>
         <div className="flex-1">

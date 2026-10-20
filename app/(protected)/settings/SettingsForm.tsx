@@ -24,13 +24,10 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
     initialData?.anniversary_date ? new Date(initialData.anniversary_date) : null
   )
 
-  // Fungsi ubah warna langsung tanpa nunggu klik simpan
   const handleColorChange = async (color: string) => {
-    setTheme(color as any) // Ubah layar langsung
+    setTheme(color as any)
     const formData = new FormData()
     formData.set('theme_color', color)
-    
-    // Kita simpan ke database diam-diam
     try {
       await updateSettings(formData)
     } catch (error) {
@@ -42,7 +39,7 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
     setLoading(true)
     try {
       formData.set('anniversary_date', anniversaryDate ? format(anniversaryDate, 'yyyy-MM-dd') : '')
-      formData.set('theme_color', theme) // Pastikan warna terbaru ikut tersimpan
+      formData.set('theme_color', theme)
       
       await updateSettings(formData)
       alert('Pengaturan berhasil disimpan!')
@@ -59,18 +56,17 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
       <form action={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         
         {/* KOLOM KIRI: PROFIL KALIAN */}
-        <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col min-h-[500px]">
+        <div className="bg-white/90 backdrop-blur-sm p-8 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col min-h-[500px]">
           <div className="flex items-center gap-3 mb-8">
             <div className="p-3 bg-[var(--theme-primary-light)] text-[var(--theme-primary)] rounded-2xl">
               <User size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Profil Kalian</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Siapa saja penghuni ruang ini?</p>
+              <h2 className="text-xl font-bold text-gray-800">Siapa Aja Nih? 👩‍❤️‍👨</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Kenalan dong, namanya siapa?</p>
             </div>
           </div>
 
-          {/* Preview Avatar */}
           <div className="flex items-center justify-center gap-8 mb-10 py-6 bg-gray-50/50 rounded-3xl border border-gray-100">
             <div className="flex flex-col items-center gap-3">
               <div className="w-20 h-20 bg-gradient-to-br from-[var(--theme-gradient-from)] to-[var(--theme-primary)] rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-lg">
@@ -116,14 +112,14 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
         </div>
 
         {/* KOLOM KANAN: MOMEN SPESIAL & TEMA */}
-        <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col min-h-[500px]">
+        <div className="bg-white/90 backdrop-blur-sm p-8 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col min-h-[500px]">
           <div className="flex items-center gap-3 mb-8">
             <div className="p-3 bg-[var(--theme-primary-light)] text-[var(--theme-primary)] rounded-2xl">
               <Calendar size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Momen Spesial</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Kapan kisah kita dimulai?</p>
+              <h2 className="text-xl font-bold text-gray-800">Kapan Jadiannya? 🗓️</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Biar hitungan harinya nggak keliru.</p>
             </div>
           </div>
 
@@ -146,7 +142,6 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
               </div>
             </div>
 
-            {/* PEMILIH WARNA TEMA */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                 <Palette size={18} className="text-[var(--theme-primary)]"/> Warna Tema Aplikasi
@@ -180,7 +175,6 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
             </div>
           </div>
 
-          {/* Tombol Simpan di bawah Kanan */}
           <div className="pt-6 mt-6 border-t border-gray-100">
             <button
               type="submit"

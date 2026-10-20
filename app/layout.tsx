@@ -1,12 +1,12 @@
 import 'react-datepicker/dist/react-datepicker.css'
 import './globals.css'
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 
-const inter = Inter({ subsets: ['latin'] })
+const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Our Space ❤️',
+  title: 'Our Space',
   description: 'Ruang privat buat kita berdua.',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -27,10 +27,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={jakarta.className}>
         {children}
         
-        {/* Script untuk mendaftarkan PWA (biar bisa di-install) */}
         <script
           dangerouslySetInnerHTML={{
             __html: `

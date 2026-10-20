@@ -19,8 +19,8 @@ export default async function MeetingsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h2 className="text-2xl font-semibold text-gray-800">Jadwal Pertemuan</h2>
-        <p className="text-gray-500">Atur waktu buat ketemuan kita.</p>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight">Jadwal Kencan</h2>
+        <p className="text-gray-500 font-medium mt-2">Catat semua rencana manis biar nggak ada yang terlewat.</p>
       </header>
 
       <MeetingList initialMeetings={meetings || []} />
