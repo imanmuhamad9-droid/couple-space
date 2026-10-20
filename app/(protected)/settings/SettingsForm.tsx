@@ -62,8 +62,8 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
               <User size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Kita Siapa Ya? 👩‍❤️‍👨</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Isi nama panggilan kalian.</p>
+              <h2 className="text-xl font-bold text-gray-800">Biodata Kita</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Nama panggilan.</p>
             </div>
           </div>
 
@@ -87,7 +87,7 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
 
           <div className="space-y-6 flex-1">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Nama Kamu</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Nama Aku</label>
               <input
                 type="text"
                 name="partner_a_name"
@@ -98,7 +98,7 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Nama Pasangan</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Nama Kamu</label>
               <input
                 type="text"
                 name="partner_b_name"
@@ -118,7 +118,7 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
               <Calendar size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Sejak Kapan Jadiannya? 🗓️</h2>
+              <h2 className="text-xl font-bold text-gray-800">Tanggal Jadian?</h2>
               <p className="text-sm text-gray-500 mt-0.5">Jangan sampe lupa sama tanggal penting ini!</p>
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
               <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                 <Palette size={18} className="text-[var(--theme-primary)]"/> Warna Tema Aplikasi
               </label>
-              <p className="text-xs text-gray-500 mb-3">Pilih warna kesukaan kalian.</p>
+              <p className="text-xs text-gray-500 mb-3">Pilih warna kesukaan kamu.</p>
               
               <div className="flex gap-3">
                 {[
@@ -170,7 +170,7 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
             <div className="bg-[var(--theme-primary-light)]/50 p-5 rounded-2xl border border-[var(--theme-primary-light)] flex items-start gap-3 mt-4">
               <Sparkles className="text-[var(--theme-primary)] mt-0.5 flex-shrink-0" size={20} />
               <p className="text-sm text-gray-700 leading-relaxed">
-                Jika kamu mengubah warna atau nama, pasanganmu juga akan melihat perubahan yang sama saat membuka web ini.
+                Pilh aja warna sesuka kamu sayang...
               </p>
             </div>
           </div>

@@ -73,9 +73,9 @@ export default async function DashboardPage() {
       {/* HEADER (Teks dikecilin di HP) */}
       <header>
         <h2 className="text-2xl md:text-4xl font-black text-gray-800 tracking-tight font-slab">
-          Hola, {settings?.partner_a_name || 'Kamu'} & {settings?.partner_b_name || 'Sayang'}!
+          Hai, {settings?.partner_a_name || 'Kamu'} & {settings?.partner_b_name || 'Sayang'}!
         </h2>
-        <p className="text-gray-500 font-medium mt-1 text-sm md:text-lg">Lagi pengen ngapain hari ini?</p>
+        <p className="text-gray-500 font-medium mt-1 text-sm md:text-lg">Ini jadwal kita hari ini ya</p>
       </header>
 
       {/* MOOD TRACKER */}

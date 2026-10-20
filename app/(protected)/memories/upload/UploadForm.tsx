@@ -56,7 +56,7 @@ export default function UploadForm() {
           <ArrowLeft size={18} /> Kembali ke Galeri
         </Link>
         <h1 className="text-3xl font-black text-gray-800 mt-6 font-slab">Tambah Kenangan Baru</h1>
-        <p className="text-gray-500 font-medium mt-1">Upload foto manis kalian di luar jadwal pertemuan.</p>
+        <p className="text-gray-500 font-medium mt-1">Upload foto di luar jadwal pertemuan kita.</p>
       </div>
 
       {/* Form Layout 2 Kolom */}
@@ -104,7 +104,7 @@ export default function UploadForm() {
 
         {/* Kolom Kanan: Detail Form */}
         <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col space-y-5">
-          <h2 className="text-lg font-bold text-gray-800 mb-2">Detail Kenangan</h2>
+          <h2 className="text-lg font-bold text-gray-800 mb-2">Detail Foto Kenangan</h2>
 
           {/* INPUT JUDUL BARU */}
           <div>
@@ -131,11 +131,10 @@ export default function UploadForm() {
               />
               <Calendar size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
-            <p className="text-xs text-gray-400 mt-2">Foto ini akan diurutkan di Galeri berdasarkan tanggal yang kamu pilih.</p>
-          </div>
+                      </div>
 
           <div className="flex-1 flex flex-col">
-            <label className="block text-sm font-bold text-gray-700 mb-2">Catatan Kenangan (Opsional)</label>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Catatan Kenangan</label>
             <textarea
               name="caption"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] text-sm flex-1 min-h-[100px]"

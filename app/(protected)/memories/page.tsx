@@ -31,8 +31,8 @@ export default async function MemoriesPage() {
       {/* Header Galeri dengan Font Slab */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-4xl font-black text-gray-800 font-slab">Galeri Kita 📸</h2>
-          <p className="text-gray-500 font-medium mt-1 text-sm md:text-lg">Semua momen indah yang pernah kita lewati.</p>
+          <h2 className="text-2xl md:text-4xl font-black text-gray-800 font-slab">Galeri Kita</h2>
+          <p className="text-gray-500 font-medium mt-1 text-sm md:text-lg">Liat ini semua momen indah yang kita lalui berdua...</p>
         </div>
         
         <Link 

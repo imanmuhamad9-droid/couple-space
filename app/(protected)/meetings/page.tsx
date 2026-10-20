@@ -19,8 +19,8 @@ export default async function MeetingsPage() {
   return (
     <div className="space-y-6">
                      <header>
-        <h2 className="text-2xl md:text-4xl font-black text-gray-800 tracking-tight font-slab">Mau Kemana Kita? 🗺️</h2>
-        <p className="text-gray-500 font-medium mt-1 text-sm md:text-lg">Tulis semua wishlist kencan kita di sini.</p>
+        <h2 className="text-2xl md:text-4xl font-black text-gray-800 tracking-tight font-slab">Mau Kemana Kita?</h2>
+        <p className="text-gray-500 font-medium mt-1 text-sm md:text-lg">Catat semua rencana kita disini ya...</p>
       </header>
 
       <MeetingList initialMeetings={meetings || []} />

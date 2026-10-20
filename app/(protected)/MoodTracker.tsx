@@ -36,7 +36,7 @@ export default function MoodTracker({ nameA, nameB, initialMoodA, initialMoodB }
     if (mood >= 60) return { text: "Semangat! ✨", icon: <Zap className="text-yellow-500" size={12} /> }
     if (mood >= 40) return { text: "Biasa aja 🙂", icon: <Smile className="text-blue-500" size={12} /> }
     if (mood >= 20) return { text: "Capek 🥺", icon: <Meh className="text-gray-500" size={12} /> }
-    return { text: "Butuh peluk 💔", icon: <Frown className="text-red-500" size={12} /> }
+    return { text: "Butuh Kamu 💔", icon: <Frown className="text-red-500" size={12} /> }
   }
 
   const renderMoodBar = (person: 'A' | 'B', name: string, mood: number) => {
@@ -72,7 +72,7 @@ export default function MoodTracker({ nameA, nameB, initialMoodA, initialMoodB }
 
   return (
     <div className="mb-6">
-      <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-3">How are you feeling?</h2>
+      <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-3">Gimana Perasaan Kamu?</h2>
       <div className="grid grid-cols-2 gap-2 md:gap-4">
         {renderMoodBar('A', nameA, moodA)}
         {renderMoodBar('B', nameB, moodB)}
