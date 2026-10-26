@@ -80,6 +80,9 @@ export default function MeetingForm({
 
   return (
     <form action={handleSubmit} className="space-y-5">
+      {/* TAMBAHAN: Hidden input agar status tidak hilang saat di-edit */}
+      <input type="hidden" name="status" value={initialData?.status || 'planned'} />
+
       <div>
         <label className="block text-sm font-bold text-gray-700 mb-1.5">Judul Rencana</label>
         <input

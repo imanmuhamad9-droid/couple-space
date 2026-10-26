@@ -19,7 +19,7 @@ export default async function SettingsPage() {
     <div className="space-y-6">
             <header>
         <h2 className="text-2xl md:text-4xl font-black text-gray-800 tracking-tight font-slab">
-          Biodata Kita
+          Biodata Kita Berdua
         </h2>
         <p className="text-gray-500 font-medium mt-1 text-sm md:text-lg">
           Ubah nama, tanggal jadian, atau warna tema.
