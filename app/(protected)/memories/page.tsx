@@ -3,32 +3,35 @@ import MemoryGallery from './MemoryGallery'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 
-export const instant = false
-
 export default async function MemoriesPage() {
-  // Pastikan kolom 'title' ikut ditarik dari database
+  // Tarik data dari Supabase
   const { data: memories, error } = await supabaseAdmin
     .from('memories')
-    .select(`
-      id,
-      storage_path,
-      caption,
-      title,
-      created_at,
-      meetings (
-        title,
-        start_at
-      )
-    `)
+    .select('*') // Ambil semua kolom untuk memastikan tidak ada error relasi
     .order('created_at', { ascending: false })
 
+  // Jika Supabase gagal, tampilkan error merah di layar
   if (error) {
-    return <div className="text-red-500">Gagal memuat memori: {error.message}</div>
+    return (
+      <div className="p-10 bg-red-100 text-red-800 rounded-xl border border-red-300">
+        <h2 className="text-xl font-bold mb-2">Gagal Memuat Data dari Supabase!</h2>
+        <p>{error.message}</p>
+      </div>
+    )
+  }
+
+  // Jika data kosong
+  if (!memories || memories.length === 0) {
+    return (
+      <div className="p-10 bg-yellow-100 text-yellow-800 rounded-xl border border-yellow-300 text-center">
+        <h2 className="text-xl font-bold mb-2">Database Kosong</h2>
+        <p>Supabase terhubung, tapi tidak ada data di tabel memories.</p>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      {/* Header Galeri dengan Font Slab */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl md:text-4xl font-black text-gray-800 font-slab">Galeri Kita</h2>
@@ -43,7 +46,8 @@ export default async function MemoriesPage() {
         </Link>
       </div>
 
-      <MemoryGallery initialMemories={memories || []} />
+      {/* Kirim data ke komponen Galeri */}
+      <MemoryGallery initialMemories={memories} />
     </div>
   )
 }
