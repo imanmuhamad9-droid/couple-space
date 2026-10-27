@@ -1,43 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { X, Image as ImageIcon } from 'lucide-react'
 
 export default function MemoryGallery({ initialMemories }: { initialMemories: any[] }) {
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [selectedImage, setSelectedImage] = useState<any | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchUrls = async () => {
-      if (!initialMemories || initialMemories.length === 0) {
-        setLoading(false)
-        return
-      }
-
-      const newUrls: Record<string, string> = {}
-      for (const mem of initialMemories) {
-        if (!imageUrls[mem.storage_path]) {
-          try {
-            const res = await fetch(`/api/get-image?path=${encodeURIComponent(mem.storage_path)}`)
-            const data = await res.json()
-            if (data.url) newUrls[mem.storage_path] = data.url
-          } catch (err) {
-            console.error("Gagal load gambar", err)
-          }
-        }
-      }
-      setImageUrls(prev => ({ ...prev, ...newUrls }))
-      setLoading(false)
-    }
-    fetchUrls()
-  }, [initialMemories])
-
-  if (loading) {
-    return <div className="text-center py-10 font-bold text-gray-500">Memuat galeri...</div>
-  }
 
   if (!initialMemories || initialMemories.length === 0) {
     return (
@@ -49,42 +18,57 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
     )
   }
 
-  // Ambil data meeting dengan aman (apapun bentuknya dari Supabase)
+  // Ambil data meeting dengan aman (bisa object atau array)
   const getMeetingInfo = (mem: any) => {
     if (!mem.meetings) return null
     if (Array.isArray(mem.meetings)) return mem.meetings[0]
     return mem.meetings
   }
 
+  // FUNGSI SAKTI: Langsung buat URL Supabase tanpa lewat API
+  const getImageUrl = (path: string) => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (!supabaseUrl) {
+      console.error("WADUH! NEXT_PUBLIC_SUPABASE_URL tidak terbaca di .env.local")
+      return ''
+    }
+    const baseUrl = supabaseUrl.replace(/\/$/, '')
+    // Format URL Public Supabase Storage
+    return `${baseUrl}/storage/v1/object/public/memories/${path}`
+  }
+
   return (
     <div className="space-y-6">
-      {/* Grid Foto - Dipaksa pakai Grid CSS Biasa agar pasti muncul */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {initialMemories.map((mem) => {
           const meetingInfo = getMeetingInfo(mem)
           const dateToShow = meetingInfo?.start_at || mem.created_at || new Date().toISOString()
           const displayTitle = meetingInfo?.title || mem.title || 'Tanpa Judul'
+          const imageUrl = getImageUrl(mem.storage_path)
 
           return (
             <div 
               key={mem.id} 
-              onClick={() => setSelectedImage(mem)}
+              onClick={() => setSelectedImage({ ...mem, imageUrl })}
               className="relative rounded-2xl overflow-hidden cursor-pointer bg-gray-200 aspect-[3/4] shadow-sm border border-gray-100"
             >
-              {imageUrls[mem.storage_path] ? (
-                <img 
-                  src={imageUrls[mem.storage_path]} 
-                  alt={displayTitle} 
-                  className="w-full h-full object-cover" 
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-                   <ImageIcon className="text-gray-400 mb-2" />
-                   <span className="text-[10px] text-gray-500 text-center px-2">Gagal Load</span>
-                </div>
-              )}
+              <img 
+                src={imageUrl} 
+                alt={displayTitle} 
+                className="w-full h-full object-cover" 
+                onError={(e) => {
+                  // MUNCULKAN URL ASLINYA DI CONSOLE BIAR KETAHUAN SALAHNYA DI MANA
+                  console.log("====================================")
+                  console.log("GAMBAR GAGAL DIMUAT. Coba copy URL ini ke tab baru:")
+                  console.log(imageUrl)
+                  console.log("====================================")
+                  
+                  // Ganti dengan gambar placeholder jika error
+                  (e.target as HTMLImageElement).src = 'https://placehold.co/400x600?text=Foto+Rusak'
+                }}
+              />
               
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 pointer-events-none">
                 <p className="text-white/80 text-[10px] font-semibold mb-1">
                   {format(new Date(dateToShow), 'dd MMM yyyy', { locale: localeId })}
                 </p>
@@ -98,7 +82,7 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
       </div>
 
       {/* Lightbox Zoom */}
-      {selectedImage && imageUrls[selectedImage.storage_path] && (
+      {selectedImage && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md"
           onClick={() => setSelectedImage(null)}
@@ -111,7 +95,7 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
           </button>
           
           <img 
-            src={imageUrls[selectedImage.storage_path]} 
+            src={selectedImage.imageUrl} 
             alt="Zoomed" 
             className="max-w-full max-h-[85vh] object-contain rounded-xl" 
             onClick={(e) => e.stopPropagation()}

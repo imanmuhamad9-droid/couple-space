@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -12,10 +12,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ url: path })
   }
 
-  // Ambil Public URL dari Supabase
-  const { data } = supabaseAdmin.storage
-    .from('memories')
-    .getPublicUrl(path)
+  // Ambil URL langsung dari Supabase menggunakan variabel env publik
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    return NextResponse.json({ error: 'Supabase config missing' }, { status: 500 })
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  // Paksa ambil Public URL
+  const { data } = supabase.storage.from('memories').getPublicUrl(path)
 
   return NextResponse.json({ url: data.publicUrl })
 }
