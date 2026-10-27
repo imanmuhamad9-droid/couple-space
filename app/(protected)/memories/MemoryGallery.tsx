@@ -18,22 +18,18 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
     )
   }
 
-  // Ambil data meeting dengan aman (bisa object atau array)
   const getMeetingInfo = (mem: any) => {
     if (!mem.meetings) return null
     if (Array.isArray(mem.meetings)) return mem.meetings[0]
     return mem.meetings
   }
 
-  // FUNGSI SAKTI: Langsung buat URL Supabase tanpa lewat API
   const getImageUrl = (path: string) => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     if (!supabaseUrl) {
-      console.error("WADUH! NEXT_PUBLIC_SUPABASE_URL tidak terbaca di .env.local")
       return ''
     }
     const baseUrl = supabaseUrl.replace(/\/$/, '')
-    // Format URL Public Supabase Storage
     return `${baseUrl}/storage/v1/object/public/memories/${path}`
   }
 
@@ -57,14 +53,9 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
                 alt={displayTitle} 
                 className="w-full h-full object-cover" 
                 onError={(e) => {
-                  // MUNCULKAN URL ASLINYA DI CONSOLE BIAR KETAHUAN SALAHNYA DI MANA
-                  console.log("====================================")
-                  console.log("GAMBAR GAGAL DIMUAT. Coba copy URL ini ke tab baru:")
-                  console.log(imageUrl)
-                  console.log("====================================")
-                  
-                  // Ganti dengan gambar placeholder jika error
-                  (e.target as HTMLImageElement).src = 'https://placehold.co/400x600?text=Foto+Rusak'
+                  // PERBAIKAN TYPESCRIPT DI SINI
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'https://placehold.co/400x600?text=Foto+Rusak';
                 }}
               />
               
