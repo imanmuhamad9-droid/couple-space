@@ -38,11 +38,15 @@ export default function MeetingForm({
   async function handleSubmit(formData: FormData) {
     setLoading(true)
     try {
-      let finalStart = ''
+            let finalStart = ''
       if (startDate && startHour && startMinute) {
-        const newDate = new Date(startDate)
-        newDate.setHours(parseInt(startHour), parseInt(startMinute))
-        finalStart = newDate.toISOString()
+        // Ambil format YYYY-MM-DD dari DatePicker
+        const year = startDate.getFullYear()
+        const month = String(startDate.getMonth() + 1).padStart(2, '0')
+        const day = String(startDate.getDate()).padStart(2, '0')
+        
+        // Gabungkan dengan jam & menit, lalu paksa pakai timezone WIB (+07:00)
+        finalStart = `${year}-${month}-${day}T${startHour}:${startMinute}:00+07:00`
       }
 
       formData.set('start_at', finalStart)
