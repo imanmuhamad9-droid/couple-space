@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
+    "browser-image-compression": "^2.0.2",
     "date-fns": "^4.4.0",
     "jose": "^6.2.12",
     "lucide-react": "^1.59.0",

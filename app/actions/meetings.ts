@@ -10,7 +10,7 @@ export async function addMeeting(formData: FormData) {
   const location = formData.get('location') as string
   const start_at = formData.get('start_at') as string
   const end_at = formData.get('end_at') as string
-  const notes = formData.get('notes') as string // <-- Tambahan Notes
+  const notes = formData.get('notes') as string
 
   const { error } = await supabaseAdmin.from('meetings').insert({
     title,
@@ -18,7 +18,7 @@ export async function addMeeting(formData: FormData) {
     location,
     start_at: new Date(start_at).toISOString(),
     end_at: end_at ? new Date(end_at).toISOString() : null,
-    notes, // <-- Simpan Notes
+    notes,
   })
 
   if (error) throw new Error(error.message)
@@ -34,7 +34,7 @@ export async function updateMeeting(id: number, formData: FormData) {
   const start_at = formData.get('start_at') as string
   const end_at = formData.get('end_at') as string
   const status = formData.get('status') as string
-  const notes = formData.get('notes') as string // <-- Tambahan Notes
+  const notes = formData.get('notes') as string
 
   const { error } = await supabaseAdmin
     .from('meetings')
@@ -45,7 +45,7 @@ export async function updateMeeting(id: number, formData: FormData) {
       start_at: new Date(start_at).toISOString(),
       end_at: end_at ? new Date(end_at).toISOString() : null,
       status,
-      notes, // <-- Update Notes
+      notes,
     })
     .eq('id', id)
 
@@ -84,13 +84,20 @@ export async function uploadMemories(meetingId: number, formData: FormData) {
   }
 
   const uploadPromises = files.map(async (file) => {
-    const fileExt = file.name.split('.').pop()
+    // PERBAIKAN: Deteksi ekstensi dengan aman, jika undefined pakai jpg
+    let fileExt = file.name.split('.').pop()?.toLowerCase()
+    if (!fileExt || fileExt === 'undefined' || fileExt === 'heic' || fileExt === 'heif') {
+      fileExt = 'jpg' // Paksa jadi jpg
+    }
+
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
     const filePath = `meeting-${meetingId}/${fileName}`
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('memories')
-      .upload(filePath, file)
+      .upload(filePath, file, {
+        contentType: file.type || 'image/jpeg', // Paksa contentType agar Supabase nggak bingung
+      })
 
     if (uploadError) throw new Error(uploadError.message)
 
@@ -130,13 +137,20 @@ export async function uploadManualMemories(formData: FormData) {
   }
 
   const uploadPromises = files.map(async (file) => {
-    const fileExt = file.name.split('.').pop()
+    // PERBAIKAN: Deteksi ekstensi dengan aman, jika undefined pakai jpg
+    let fileExt = file.name.split('.').pop()?.toLowerCase()
+    if (!fileExt || fileExt === 'undefined' || fileExt === 'heic' || fileExt === 'heif') {
+      fileExt = 'jpg' // Paksa jadi jpg
+    }
+
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
     const filePath = `manual-upload/${fileName}`
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('memories')
-      .upload(filePath, file)
+      .upload(filePath, file, {
+        contentType: file.type || 'image/jpeg', // Paksa contentType agar Supabase nggak bingung
+      })
 
     if (uploadError) throw new Error(uploadError.message)
 
@@ -144,7 +158,7 @@ export async function uploadManualMemories(formData: FormData) {
       media_type: 'photo',
       storage_path: filePath,
       caption: caption,
-      title: title || 'Kenangan Manis', // <-- Pastikan masuk ke sini
+      title: title || 'Kenangan Manis',
       created_at: manualDate ? new Date(manualDate).toISOString() : new Date().toISOString(),
     })
 
