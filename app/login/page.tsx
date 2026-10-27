@@ -1,15 +1,15 @@
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
+import { verifySession } from '@/lib/auth' // sesuaikan import-nya dengan lokasi file auth.ts kamu
 import LoginForm from './LoginForm'
 
-export const instant = false // Tambahan untuk Next.js 15/16
+export const instant = false
 
 export default async function LoginPage() {
-  const cookieStore = await cookies()
-  const session = cookieStore.get('session')?.value
+  // Cek apakah sesinya valid (belum expired 10 menit)
+  const isValid = await verifySession()
 
-  // Kalau udah punya cookie, lempar ke dashboard
-  if (session) {
+  // Kalau udah punya sesi valid, lempar ke dashboard
+  if (isValid) {
     redirect('/')
   }
 
