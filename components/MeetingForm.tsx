@@ -30,7 +30,6 @@ export default function MeetingForm({
     initialData ? new Date(initialData.start_at) : (defaultDate || null)
   )
   
-  // Ambil data jam dari DB, jika tidak ada default ke '12:00'
   const defaultStartTime = initialData ? new Date(initialData.start_at).toTimeString().slice(0, 5) : '12:00'
   const [startHour, setStartHour] = useState(defaultStartTime.split(':')[0])
   const [startMinute, setStartMinute] = useState(defaultStartTime.split(':')[1])
@@ -38,14 +37,14 @@ export default function MeetingForm({
   async function handleSubmit(formData: FormData) {
     setLoading(true)
     try {
-            let finalStart = ''
+      let finalStart = ''
       if (startDate && startHour && startMinute) {
-        // Ambil format YYYY-MM-DD dari DatePicker
+        // AMBIL TANGGAL FORMAT YYYY-MM-DD
         const year = startDate.getFullYear()
         const month = String(startDate.getMonth() + 1).padStart(2, '0')
         const day = String(startDate.getDate()).padStart(2, '0')
         
-        // Gabungkan dengan jam & menit, lalu paksa pakai timezone WIB (+07:00)
+        // PAKSA TIMEZONE +07:00 (WIB) AGAR TIDAK BERUBAH DI VERCEL
         finalStart = `${year}-${month}-${day}T${startHour}:${startMinute}:00+07:00`
       }
 
@@ -68,7 +67,6 @@ export default function MeetingForm({
 
   const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] font-medium"
 
-  // Buat daftar angka untuk dropdown jam (00-23) dan menit (00-59)
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
   const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'))
 
@@ -105,7 +103,7 @@ export default function MeetingForm({
           </div>
         </div>
 
-        {/* DROPDOWN JAM & MENIT (PENGGANTI INPUT TYPE=TIME) */}
+        {/* DROPDOWN JAM & MENIT */}
         <div className="md:col-span-2">
           <label className="block text-sm font-bold text-gray-700 mb-1.5">Jam Mulai (WIB)</label>
           <div className="flex items-center gap-2">
