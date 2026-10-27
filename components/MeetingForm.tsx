@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import DatePicker from 'react-datepicker'
 import { addMeeting, updateMeeting } from '@/app/actions/meetings'
-import { Calendar } from 'lucide-react'
+import { Calendar, Clock } from 'lucide-react'
 
 type Meeting = {
   id: number
@@ -29,37 +29,24 @@ export default function MeetingForm({
   const [startDate, setStartDate] = useState<Date | null>(
     initialData ? new Date(initialData.start_at) : (defaultDate || null)
   )
-  const [endDate, setEndDate] = useState<Date | null>(
-    initialData?.end_at ? new Date(initialData.end_at) : null
-  )
-  const [startTime, setStartTime] = useState<string>(
-    initialData ? new Date(initialData.start_at).toTimeString().slice(0, 5) : '12:00'
-  )
-  const [endTime, setEndTime] = useState<string>(
-    initialData?.end_at ? new Date(initialData.end_at).toTimeString().slice(0, 5) : ''
-  )
+  
+  // Ambil data jam dari DB, jika tidak ada default ke '12:00'
+  const defaultStartTime = initialData ? new Date(initialData.start_at).toTimeString().slice(0, 5) : '12:00'
+  const [startHour, setStartHour] = useState(defaultStartTime.split(':')[0])
+  const [startMinute, setStartMinute] = useState(defaultStartTime.split(':')[1])
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
     try {
       let finalStart = ''
-      if (startDate && startTime) {
-        const [hours, minutes] = startTime.split(':')
+      if (startDate && startHour && startMinute) {
         const newDate = new Date(startDate)
-        newDate.setHours(parseInt(hours), parseInt(minutes))
+        newDate.setHours(parseInt(startHour), parseInt(startMinute))
         finalStart = newDate.toISOString()
       }
 
-      let finalEnd = ''
-      if (endDate && endTime) {
-        const [hours, minutes] = endTime.split(':')
-        const newDate = new Date(endDate)
-        newDate.setHours(parseInt(hours), parseInt(minutes))
-        finalEnd = newDate.toISOString()
-      }
-
       formData.set('start_at', finalStart)
-      formData.set('end_at', finalEnd)
+      formData.set('status', initialData?.status || 'planned')
 
       if (initialData) {
         await updateMeeting(initialData.id, formData)
@@ -75,12 +62,14 @@ export default function MeetingForm({
     }
   }
 
-  // Class CSS untuk Input biar Teks Hitam Tegas & Placeholder Lebih Jelas
   const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] font-medium"
+
+  // Buat daftar angka untuk dropdown jam (00-23) dan menit (00-59)
+  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
+  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'))
 
   return (
     <form action={handleSubmit} className="space-y-5">
-      {/* TAMBAHAN: Hidden input agar status tidak hilang saat di-edit */}
       <input type="hidden" name="status" value={initialData?.status || 'planned'} />
 
       <div>
@@ -96,7 +85,7 @@ export default function MeetingForm({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="md:col-span-2">
+        <div className="md:col-span-1">
           <label className="block text-sm font-bold text-gray-700 mb-1.5">Tanggal</label>
           <div className="relative">
             <DatePicker
@@ -111,15 +100,38 @@ export default function MeetingForm({
             <Calendar size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
         </div>
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1.5">Jam Mulai</label>
-          <input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            className={`${inputClass} text-center`}
-            required
-          />
+
+        {/* DROPDOWN JAM & MENIT (PENGGANTI INPUT TYPE=TIME) */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-bold text-gray-700 mb-1.5">Jam Mulai (WIB)</label>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <select
+                value={startHour}
+                onChange={(e) => setStartHour(e.target.value)}
+                className={`${inputClass} appearance-none text-center cursor-pointer`}
+                required
+              >
+                {hours.map((h) => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+              <Clock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+            
+            <span className="font-bold text-gray-600">:</span>
+            
+            <select
+              value={startMinute}
+              onChange={(e) => setStartMinute(e.target.value)}
+              className={`${inputClass} appearance-none text-center cursor-pointer flex-1`}
+              required
+            >
+              {minutes.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
