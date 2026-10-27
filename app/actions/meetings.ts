@@ -2,7 +2,6 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
-import imageCompression from 'browser-image-compression'
 
 // 1. CREATE (Tambah Jadwal)
 export async function addMeeting(formData: FormData) {
@@ -80,28 +79,20 @@ export async function uploadMemories(meetingId: number, formData: FormData) {
   }
 
   const uploadPromises = files.map(async (file) => {
-    // --- PROSES KOMPRESI GAMBAR ---
-    const options = {
-      maxSizeMB: 1, // Maksimal 1MB (biar ringan di HP)
-      maxWidthOrHeight: 1920,
-      useWebWorker: true,
-      fileType: 'image/jpeg' // Paksa jadi JPEG (buat jaga-jaga kalau dari iPhone/HEIC)
+    // Deteksi ekstensi aman
+    let fileExt = file.name.split('.').pop()?.toLowerCase()
+    if (!fileExt || fileExt === 'undefined' || fileExt === 'heic' || fileExt === 'heif') {
+      fileExt = 'jpg'
     }
 
-    let fileToUpload = file
-    try {
-      fileToUpload = await imageCompression(file, options)
-    } catch (error) {
-      console.log("Gagal kompresi, pakai file asli", error)
-    }
-
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
     const filePath = `meeting-${meetingId}/${fileName}`
 
+    // Upload langsung tanpa kompresi (biar aman di server Vercel)
     const { error: uploadError } = await supabaseAdmin.storage
       .from('memories')
-      .upload(filePath, fileToUpload, {
-        contentType: 'image/jpeg',
+      .upload(filePath, file, {
+        contentType: file.type || 'image/jpeg',
       })
 
     if (uploadError) throw new Error(uploadError.message)
@@ -141,28 +132,18 @@ export async function uploadManualMemories(formData: FormData) {
   }
 
   const uploadPromises = files.map(async (file) => {
-    // --- PROSES KOMPRESI GAMBAR ---
-    const options = {
-      maxSizeMB: 1,
-      maxWidthOrHeight: 1920,
-      useWebWorker: true,
-      fileType: 'image/jpeg'
+    let fileExt = file.name.split('.').pop()?.toLowerCase()
+    if (!fileExt || fileExt === 'undefined' || fileExt === 'heic' || fileExt === 'heif') {
+      fileExt = 'jpg'
     }
 
-    let fileToUpload = file
-    try {
-      fileToUpload = await imageCompression(file, options)
-    } catch (error) {
-      console.log("Gagal kompresi, pakai file asli", error)
-    }
-
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
     const filePath = `manual-upload/${fileName}`
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('memories')
-      .upload(filePath, fileToUpload, {
-        contentType: 'image/jpeg',
+      .upload(filePath, file, {
+        contentType: file.type || 'image/jpeg',
       })
 
     if (uploadError) throw new Error(uploadError.message)

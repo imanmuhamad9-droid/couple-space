@@ -1,12 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   experimental: {
-    agentFeedback: true,
+    serverActions: {
+      bodySizeLimit: '10mb', // <-- INI KUNCI AGAR FILE DARI HP BISA MASUK
+    },
   },
-  cacheComponents: true,
-  partialPrefetching: true,
   turbopack: {
     rules: {
       "*.css": {
