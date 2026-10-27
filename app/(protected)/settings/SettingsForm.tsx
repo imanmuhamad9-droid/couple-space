@@ -1,28 +1,77 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import DatePicker from 'react-datepicker'
-import { updateSettings } from '@/app/actions/settings'
-import { Calendar, Save, User, Heart, Sparkles, Palette } from 'lucide-react'
+import { updateSettings, updateAvatarDirectly } from '@/app/actions/settings'
+import { Calendar, Save, User, Heart, Sparkles, Palette, Camera, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTheme } from '@/components/ThemeProvider'
+import imageCompression from 'browser-image-compression' // Pastikan sudah di-install
 
 type Settings = {
   partner_a_name: string
   partner_b_name: string
+  partner_a_avatar?: string | null
+  partner_b_avatar?: string | null
   anniversary_date: string
   theme_color?: string
 }
 
 export default function SettingsForm({ initialData }: { initialData: Settings | null }) {
   const [loading, setLoading] = useState(false)
+  const [uploadingA, setUploadingA] = useState(false)
+  const [uploadingB, setUploadingB] = useState(false)
+  
   const { theme, setTheme } = useTheme()
   
   const [nameA, setNameA] = useState(initialData?.partner_a_name || '')
   const [nameB, setNameB] = useState(initialData?.partner_b_name || '')
+  const [avatarA, setAvatarA] = useState(initialData?.partner_a_avatar || '')
+  const [avatarB, setAvatarB] = useState(initialData?.partner_b_avatar || '')
+  
   const [anniversaryDate, setAnniversaryDate] = useState<Date | null>(
     initialData?.anniversary_date ? new Date(initialData.anniversary_date) : null
   )
+
+  const fileInputRefA = useRef<HTMLInputElement>(null)
+  const fileInputRefB = useRef<HTMLInputElement>(null)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>, partner: 'a' | 'b') => {
+    let file = e.target.files?.[0]
+    if (!file) return
+
+    if (partner === 'a') setUploadingA(true)
+    else setUploadingB(true)
+
+    try {
+      // 1. KOMPRES GAMBAR DI BROWSER & PAKSA FORMAT JPEG
+      // Ini akan mengubah foto iPhone (HEIC) menjadi JPG secara otomatis
+      file = await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
+        fileType: 'image/jpeg' // <-- Kunci utama agar file aneh bisa dibaca
+      })
+
+      // 2. Preview instan
+      const objectUrl = URL.createObjectURL(file)
+      if (partner === 'a') setAvatarA(objectUrl)
+      else setAvatarB(objectUrl)
+
+      // 3. Kirim FILE dan STRING langsung ke server action
+      await updateAvatarDirectly(file, partner)
+      
+    } catch (error: any) {
+      console.error("ERROR ASLI:", error)
+      alert('Gagal upload: ' + (error?.message || 'Terjadi kesalahan sistem'))
+      // Kembalikan foto lama jika gagal
+      if (partner === 'a') setAvatarA(initialData?.partner_a_avatar || '')
+      else setAvatarB(initialData?.partner_b_avatar || '')
+    } finally {
+      if (partner === 'a') setUploadingA(false)
+      else setUploadingB(false)
+    }
+  }
 
   const handleColorChange = async (color: string) => {
     setTheme(color as any)
@@ -63,26 +112,56 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">Biodata Kita</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Nama panggilan.</p>
+              <p className="text-sm text-gray-500 mt-0.5">Nama panggilan & Foto Profil.</p>
             </div>
           </div>
 
           <div className="flex items-center justify-center gap-8 mb-10 py-6 bg-gray-50/50 rounded-3xl border border-gray-100">
+            
+            {/* FOTO PROFIL A */}
             <div className="flex flex-col items-center gap-3">
-              <div className="w-20 h-20 bg-gradient-to-br from-[var(--theme-gradient-from)] to-[var(--theme-primary)] rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-lg">
-                {nameA ? nameA.charAt(0).toUpperCase() : 'A'}
+              <div 
+                onClick={() => !uploadingA && fileInputRefA.current?.click()}
+                className="w-20 h-20 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-[var(--theme-gradient-from)] to-[var(--theme-primary)] relative cursor-pointer group overflow-hidden"
+              >
+                {avatarA ? (
+                  <img src={avatarA} alt="A" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white">
+                    {nameA ? nameA.charAt(0).toUpperCase() : 'A'}
+                  </div>
+                )}
+                <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${uploadingA ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  {uploadingA ? <Loader2 size={24} className="text-white animate-spin" /> : <Camera size={24} className="text-white" />}
+                </div>
               </div>
+              <input type="file" accept="image/*" className="hidden" ref={fileInputRefA} onChange={(e) => handleAvatarUpload(e, 'a')} />
               <span className="text-sm font-bold text-gray-700 max-w-[100px] truncate">{nameA || 'Kamu'}</span>
             </div>
             
             <Heart className="text-[var(--theme-primary)]" size={32} fill="currentColor" />
             
+            {/* FOTO PROFIL B */}
             <div className="flex flex-col items-center gap-3">
-              <div className="w-20 h-20 bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-gradient-to)] rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-lg">
-                {nameB ? nameB.charAt(0).toUpperCase() : 'B'}
+              <div 
+                onClick={() => !uploadingB && fileInputRefB.current?.click()}
+                className="w-20 h-20 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-gradient-to)] relative cursor-pointer group overflow-hidden"
+              >
+                {avatarB ? (
+                  <img src={avatarB} alt="B" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white">
+                    {nameB ? nameB.charAt(0).toUpperCase() : 'B'}
+                  </div>
+                )}
+                <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${uploadingB ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  {uploadingB ? <Loader2 size={24} className="text-white animate-spin" /> : <Camera size={24} className="text-white" />}
+                </div>
               </div>
+              <input type="file" accept="image/*" className="hidden" ref={fileInputRefB} onChange={(e) => handleAvatarUpload(e, 'b')} />
               <span className="text-sm font-bold text-gray-700 max-w-[100px] truncate">{nameB || 'Pasangan'}</span>
             </div>
+
           </div>
 
           <div className="space-y-6 flex-1">
@@ -131,7 +210,6 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
                   selected={anniversaryDate}
                   onChange={(date: Date | null) => setAnniversaryDate(date)}
                   dateFormat="dd MMMM yyyy"
-                  locale="id"
                   placeholderText="Pilih tanggal jadian"
                   className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] text-sm font-medium cursor-pointer transition-all"
                   showYearDropdown
@@ -170,7 +248,7 @@ export default function SettingsForm({ initialData }: { initialData: Settings | 
             <div className="bg-[var(--theme-primary-light)]/50 p-5 rounded-2xl border border-[var(--theme-primary-light)] flex items-start gap-3 mt-4">
               <Sparkles className="text-[var(--theme-primary)] mt-0.5 flex-shrink-0" size={20} />
               <p className="text-sm text-gray-700 leading-relaxed">
-                Pilh aja warna sesuka kamu sayang...
+                Klik foto profilmu di atas untuk menggantinya.
               </p>
             </div>
           </div>

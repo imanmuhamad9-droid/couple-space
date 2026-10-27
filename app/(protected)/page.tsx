@@ -70,7 +70,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6 md:space-y-8">
       
-      {/* HEADER (Teks dikecilin di HP) */}
+      {/* HEADER DENGAN FOTO PROFIL DIHAPUS, JADI TEKS SAJA */}
       <header>
         <h2 className="text-2xl md:text-4xl font-black text-gray-800 tracking-tight font-slab">
           Hai, {settings?.partner_a_name || 'Kamu'} & {settings?.partner_b_name || 'Sayang'}!
@@ -78,15 +78,17 @@ export default async function DashboardPage() {
         <p className="text-gray-500 font-medium mt-1 text-sm md:text-lg">Ini jadwal kita hari ini ya</p>
       </header>
 
-      {/* MOOD TRACKER */}
+      {/* MOOD TRACKER (Kirim data avatar ke sini) */}
       <MoodTracker 
         nameA={settings?.partner_a_name || 'Kamu'} 
         nameB={settings?.partner_b_name || 'Pasangan'}
         initialMoodA={settings?.mood_a || 50}
         initialMoodB={settings?.mood_b || 50}
+        avatarA={settings?.partner_a_avatar || ''}
+        avatarB={settings?.partner_b_avatar || ''}
       />
 
-            {/* CARD ROMANTIS (Hitungan Hari) */}
+      {/* CARD ROMANTIS (Hitungan Hari) */}
       {settings?.anniversary_date && (
         <div className="bg-gradient-to-br from-[var(--theme-gradient-from)] via-[var(--theme-primary)] to-[var(--theme-gradient-to)] text-white p-6 md:p-8 rounded-[2rem] shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between md:items-center gap-6 transition-all duration-500">
           <div className="relative z-10 text-center md:text-left flex-1">
