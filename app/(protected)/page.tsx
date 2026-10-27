@@ -1,11 +1,11 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { format, differenceInDays, addYears, isAfter } from 'date-fns'
-import { id as localeId } from 'date-fns/locale'
+import { differenceInDays, addYears, isAfter } from 'date-fns'
 import Link from 'next/link'
 import { Calendar, MapPin, ArrowRight, Clock } from 'lucide-react'
 import DashboardGallery from './DashboardGallery'
 import MeetingThumbnails from './MeetingThumbnails'
 import MoodTracker from './MoodTracker'
+import DateDisplay from './DateDisplay' // <-- IMPORT KOMPONEN BARU
 import { connection } from 'next/server'
 
 export const instant = false
@@ -56,6 +56,7 @@ export default async function DashboardPage() {
 
   let meetingCountdown = ''
   if (nextMeeting) {
+    // Hitung mundur juga menggunakan format client agar akurat
     const meetingDate = new Date(nextMeeting.start_at)
     const diffMs = meetingDate.getTime() - now.getTime()
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
@@ -99,7 +100,7 @@ export default async function DashboardPage() {
               {daysTogether} <span className="text-lg md:text-2xl font-semibold drop-shadow-none">Hari</span>
             </div>
             <p className="text-white/90 font-medium text-xs md:text-base">
-              Sejak {format(new Date(settings.anniversary_date), 'dd MMMM yyyy', { locale: localeId })}
+              Sejak <DateDisplay dateString={settings.anniversary_date} formatStr="dd MMMM yyyy" />
             </p>
           </div>
           
@@ -123,8 +124,8 @@ export default async function DashboardPage() {
               
               <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-2 md:mb-3">
                 <p className="text-gray-600 font-medium text-xs md:text-base">
-                  {/* Format menggunakan HH:mm (24 Jam) tanpa embel-embel WIB */}
-                  {format(new Date(nextMeeting.start_at), 'EEEE, dd MMM yyyy - HH:mm', { locale: localeId })}
+                  {/* PAKAI KOMPONEN BARU DI SINI */}
+                  <DateDisplay dateString={nextMeeting.start_at} formatStr="EEEE, dd MMM yyyy - HH:mm" />
                 </p>
                 <div className="flex items-center gap-1 bg-pink-50 text-pink-600 px-2 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-pink-100">
                   <Clock size={10} className="md:w-3 md:h-3" /> {meetingCountdown}
@@ -154,8 +155,8 @@ export default async function DashboardPage() {
                 <div className="mb-2 md:mb-4">
                   <h4 className="font-bold text-gray-800 text-lg md:text-xl">{meeting.title}</h4>
                   <p className="text-xs md:text-sm font-bold text-[var(--theme-primary)]">
-                    {/* Format menggunakan HH:mm (24 Jam) tanpa embel-embel WIB */}
-                    {format(new Date(meeting.start_at), 'dd MMM yyyy - HH:mm', { locale: localeId })}
+                    {/* PAKAI KOMPONEN BARU DI SINI */}
+                    <DateDisplay dateString={meeting.start_at} formatStr="dd MMM yyyy - HH:mm" />
                   </p>
                   {meeting.location && <p className="text-[10px] md:text-xs text-gray-400 mt-1 font-medium">📍 {meeting.location}</p>}
                 </div>
