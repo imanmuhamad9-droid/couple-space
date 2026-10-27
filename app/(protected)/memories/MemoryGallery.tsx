@@ -12,9 +12,8 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
   const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // State Pagination
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 8 // Jumlah grup per halaman
+  const itemsPerPage = 8 
 
   if (!initialMemories || initialMemories.length === 0) {
     return (
@@ -26,13 +25,21 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
     )
   }
 
+  // FUNGSI YANG DIPERBAIKI: Handle Link Internet vs Supabase
   const getImageUrl = (path: string) => {
+    if (!path) return ''
+    
+    // JIKA DARI INTERNET (DATA DUMMY), LANGSUNG KEMBALIKAN
+    if (path.startsWith('http')) {
+      return path
+    }
+
+    // JIKA DARI SUPABASE STORAGE, ENCODE PATH-NYA
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    if (!supabaseUrl || !path) return ''
+    if (!supabaseUrl) return ''
     return `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/memories/${encodeURIComponent(path)}`
   }
 
-  // Grouping berdasarkan Judul
   const groupedMemories = initialMemories.reduce((acc: any[], current: any) => {
     const groupTitle = current?.title || 'Tanpa Judul'
     const existingGroup = acc.find(group => group.title === groupTitle)
@@ -51,7 +58,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
     return acc
   }, [])
 
-  // LOGIKA PAGINATION
   const totalPages = Math.ceil(groupedMemories.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedGroups = groupedMemories.slice(startIndex, startIndex + itemsPerPage)
@@ -76,7 +82,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
     }
   }
 
-  // Hapus Semua Foto dalam 1 Grup (Kolom)
   const handleDeleteGroup = async (group: any) => {
     setIsDeleting(true)
     try {
@@ -94,7 +99,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
   return (
     <div className="space-y-6">
       
-      {/* TAMPILAN PINTEREST (Masonry CSS) */}
       <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
         {paginatedGroups.map((group, index) => {
           let formattedDate = 'Tanggal tidak valid'
@@ -105,7 +109,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
           const totalPhotos = group.photos.length
           const isSinglePhoto = totalPhotos === 1
 
-          // Jika lebih dari 1 foto, paksa jadi Grid Kotak
           let gridClass = ""
           if (!isSinglePhoto) {
             gridClass = "grid gap-2 grid-cols-2"
@@ -114,7 +117,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
           return (
             <div key={`${group.title}-${index}`} className="break-inside-avoid bg-white p-3 rounded-3xl border border-gray-100 shadow-sm relative">
               
-              {/* Header Grup */}
               <div className="flex justify-between items-start mb-3 px-1">
                 <div 
                   className="cursor-pointer group/header"
@@ -133,14 +135,12 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
                   <button 
                     onClick={() => setDeleteGroupId(group.title)}
                     className="p-1.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-full transition-colors"
-                    title="Hapus semua foto di grup ini"
                   >
                     <Trash size={14} />
                   </button>
                 </div>
               </div>
 
-              {/* Wadah Foto */}
               <div 
                 className={`cursor-pointer ${gridClass}`}
                 onClick={() => setSelectedGroup(group)}
@@ -152,14 +152,13 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
                     <div 
                       key={photo?.id || photoIndex} 
                       className={`relative w-full rounded-2xl overflow-hidden group/photo bg-gray-100 ${
-                        isSinglePhoto ? '' : 'aspect-square' // Paksa kotak hanya jika > 1 foto
+                        isSinglePhoto ? '' : 'aspect-square'
                       }`}
                     >
                       {photo?.storage_path ? (
                         <img 
                           src={getImageUrl(photo.storage_path)} 
                           alt="Memory" 
-                          // Jika 1 foto: h-auto (bebas). Jika banyak: h-full object-cover (kotak rapi).
                           className={`w-full transition-transform duration-500 group-hover/photo:scale-105 ${
                             isSinglePhoto ? 'h-auto' : 'h-full object-cover'
                           }`}
@@ -203,7 +202,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
         })}
       </div>
 
-      {/* PAGINATION CONTROLS */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center bg-white px-6 py-4 rounded-2xl shadow-sm border border-gray-100 mt-6">
           <p className="text-sm text-gray-500 font-medium">
@@ -228,7 +226,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
         </div>
       )}
 
-      {/* POPUP LIHAT SEMUA FOTO */}
       {selectedGroup && (
         <div className="fixed inset-0 z-[100] flex flex-col bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
           <div className="flex justify-between items-center mb-4 text-white">
@@ -261,7 +258,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
         </div>
       )}
 
-      {/* POPUP HAPUS PER FOTO */}
       {deleteId && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl">
@@ -277,7 +273,6 @@ export default function MemoryGallery({ initialMemories }: { initialMemories: an
         </div>
       )}
 
-      {/* POPUP HAPUS PER KOLOM (GROUP) */}
       {deleteGroupId && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl">
