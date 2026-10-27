@@ -123,8 +123,8 @@ export default async function DashboardPage() {
               
               <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-2 md:mb-3">
                 <p className="text-gray-600 font-medium text-xs md:text-base">
-                  {/* UBAH FORMAT JADI HH:mm (24 JAM) & TAMBAH WIB */}
-                  {format(new Date(nextMeeting.start_at), 'EEEE, dd MMM yyyy - HH:mm', { locale: localeId })} WIB
+                  {/* Format menggunakan HH:mm (24 Jam) tanpa embel-embel WIB */}
+                  {format(new Date(nextMeeting.start_at), 'EEEE, dd MMM yyyy - HH:mm', { locale: localeId })}
                 </p>
                 <div className="flex items-center gap-1 bg-pink-50 text-pink-600 px-2 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-pink-100">
                   <Clock size={10} className="md:w-3 md:h-3" /> {meetingCountdown}
@@ -154,8 +154,8 @@ export default async function DashboardPage() {
                 <div className="mb-2 md:mb-4">
                   <h4 className="font-bold text-gray-800 text-lg md:text-xl">{meeting.title}</h4>
                   <p className="text-xs md:text-sm font-bold text-[var(--theme-primary)]">
-                    {/* UBAH FORMAT JADI HH:mm (24 JAM) & TAMBAH WIB */}
-                    {format(new Date(meeting.start_at), 'dd MMM yyyy - HH:mm', { locale: localeId })} WIB
+                    {/* Format menggunakan HH:mm (24 Jam) tanpa embel-embel WIB */}
+                    {format(new Date(meeting.start_at), 'dd MMM yyyy - HH:mm', { locale: localeId })}
                   </p>
                   {meeting.location && <p className="text-[10px] md:text-xs text-gray-400 mt-1 font-medium">📍 {meeting.location}</p>}
                 </div>

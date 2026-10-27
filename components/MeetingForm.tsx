@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import DatePicker from 'react-datepicker'
 import { addMeeting, updateMeeting } from '@/app/actions/meetings'
-import { Calendar, Clock } from 'lucide-react'
+import { Calendar, Sun, Moon } from 'lucide-react'
 
 type Meeting = {
   id: number
@@ -30,22 +30,37 @@ export default function MeetingForm({
     initialData ? new Date(initialData.start_at) : (defaultDate || null)
   )
   
+  // Ambil jam dari data lama, atau default ke 12:00
   const defaultStartTime = initialData ? new Date(initialData.start_at).toTimeString().slice(0, 5) : '12:00'
-  const [startHour, setStartHour] = useState(defaultStartTime.split(':')[0])
-  const [startMinute, setStartMinute] = useState(defaultStartTime.split(':')[1])
+  const [startTime, setStartTime] = useState<string>(defaultStartTime)
+
+  // Fungsi untuk mendeteksi Pagi/Siang/Malam dari jam yang dipilih
+  const getTimeOfDay = (timeStr: string) => {
+    if (!timeStr) return { text: '', icon: null }
+    const hour = parseInt(timeStr.split(':')[0])
+    
+    if (hour >= 5 && hour < 11) {
+      return { text: 'Pagi / Siang', icon: <Sun size={16} className="text-orange-400" /> }
+    } else if (hour >= 11 && hour < 15) {
+      return { text: 'Siang', icon: <Sun size={16} className="text-orange-500" /> }
+    } else if (hour >= 15 && hour < 18) {
+      return { text: 'Sore', icon: <Sun size={16} className="text-yellow-500" /> }
+    } else {
+      return { text: 'Malam', icon: <Moon size={16} className="text-blue-600" /> }
+    }
+  }
+
+  const timeOfDay = getTimeOfDay(startTime)
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
     try {
       let finalStart = ''
-      if (startDate && startHour && startMinute) {
-        // AMBIL TANGGAL FORMAT YYYY-MM-DD
-        const year = startDate.getFullYear()
-        const month = String(startDate.getMonth() + 1).padStart(2, '0')
-        const day = String(startDate.getDate()).padStart(2, '0')
-        
-        // PAKSA TIMEZONE +07:00 (WIB) AGAR TIDAK BERUBAH DI VERCEL
-        finalStart = `${year}-${month}-${day}T${startHour}:${startMinute}:00+07:00`
+      if (startDate && startTime) {
+        const [hours, minutes] = startTime.split(':')
+        const newDate = new Date(startDate)
+        newDate.setHours(parseInt(hours), parseInt(minutes))
+        finalStart = newDate.toISOString() // Kembali ke standar browser/server
       }
 
       formData.set('start_at', finalStart)
@@ -67,9 +82,6 @@ export default function MeetingForm({
 
   const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] font-medium"
 
-  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
-  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'))
-
   return (
     <form action={handleSubmit} className="space-y-5">
       <input type="hidden" name="status" value={initialData?.status || 'planned'} />
@@ -87,7 +99,7 @@ export default function MeetingForm({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="md:col-span-1">
+        <div className="md:col-span-2">
           <label className="block text-sm font-bold text-gray-700 mb-1.5">Tanggal</label>
           <div className="relative">
             <DatePicker
@@ -102,37 +114,20 @@ export default function MeetingForm({
             <Calendar size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
         </div>
-
-        {/* DROPDOWN JAM & MENIT */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-bold text-gray-700 mb-1.5">Jam Mulai (WIB)</label>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <select
-                value={startHour}
-                onChange={(e) => setStartHour(e.target.value)}
-                className={`${inputClass} appearance-none text-center cursor-pointer`}
-                required
-              >
-                {hours.map((h) => (
-                  <option key={h} value={h}>{h}</option>
-                ))}
-              </select>
-              <Clock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
-            
-            <span className="font-bold text-gray-600">:</span>
-            
-            <select
-              value={startMinute}
-              onChange={(e) => setStartMinute(e.target.value)}
-              className={`${inputClass} appearance-none text-center cursor-pointer flex-1`}
-              required
-            >
-              {minutes.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+        
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1.5">Jam Mulai</label>
+          <input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className={`${inputClass} text-center`}
+            required
+          />
+          {/* PENJELAS SIANG/MALAM */}
+          <div className="flex items-center justify-center gap-1.5 mt-2 text-xs font-bold text-gray-500 bg-gray-50 py-1.5 rounded-lg border border-gray-100">
+            {timeOfDay.icon}
+            <span>{timeOfDay.text}</span>
           </div>
         </div>
       </div>
