@@ -7,17 +7,15 @@ export async function GET(request: Request) {
 
   if (!path) return NextResponse.json({ error: 'Path required' }, { status: 400 })
 
-  // Cek apakah path ini sudah berupa URL lengkap (dari Google/Unsplash)
+  // Kalau dari luar (Google/Unsplash), langsung balikin URL-nya
   if (path.startsWith('http')) {
     return NextResponse.json({ url: path })
   }
 
-  // Kalau bukan URL, berarti file ada di Supabase Storage (ambil signed URL)
-  const { data, error } = await supabaseAdmin.storage
+  // Ambil Public URL dari Supabase
+  const { data } = supabaseAdmin.storage
     .from('memories')
-    .createSignedUrl(path, 3600)
+    .getPublicUrl(path)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  return NextResponse.json({ url: data.signedUrl })
+  return NextResponse.json({ url: data.publicUrl })
 }

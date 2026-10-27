@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
+import imageCompression from 'browser-image-compression'
 
 // 1. CREATE (Tambah Jadwal)
 export async function addMeeting(formData: FormData) {
@@ -13,9 +14,7 @@ export async function addMeeting(formData: FormData) {
   const notes = formData.get('notes') as string
 
   const { error } = await supabaseAdmin.from('meetings').insert({
-    title,
-    description,
-    location,
+    title, description, location,
     start_at: new Date(start_at).toISOString(),
     end_at: end_at ? new Date(end_at).toISOString() : null,
     notes,
@@ -39,13 +38,10 @@ export async function updateMeeting(id: number, formData: FormData) {
   const { error } = await supabaseAdmin
     .from('meetings')
     .update({
-      title,
-      description,
-      location,
+      title, description, location,
       start_at: new Date(start_at).toISOString(),
       end_at: end_at ? new Date(end_at).toISOString() : null,
-      status,
-      notes,
+      status, notes,
     })
     .eq('id', id)
 
@@ -54,7 +50,7 @@ export async function updateMeeting(id: number, formData: FormData) {
   revalidatePath('/')
 }
 
-// 3. DELETE (Hapus Jadwal)
+// 3. DELETE
 export async function deleteMeeting(id: number) {
   const { error } = await supabaseAdmin.from('meetings').delete().eq('id', id)
   if (error) throw new Error(error.message)
@@ -62,7 +58,7 @@ export async function deleteMeeting(id: number) {
   revalidatePath('/')
 }
 
-// 4. TANDAI SELESAI (Quick Update)
+// 4. TANDAI SELESAI
 export async function markMeetingDone(id: number) {
   const { error } = await supabaseAdmin
     .from('meetings')
@@ -74,7 +70,7 @@ export async function markMeetingDone(id: number) {
   revalidatePath('/')
 }
 
-// 5. UPLOAD MEMORIES & TANDAI SELESAI
+// 5. UPLOAD MEMORIES (DARI JADWAL)
 export async function uploadMemories(meetingId: number, formData: FormData) {
   const files = formData.getAll('files') as File[]
   const caption = formData.get('caption') as string
@@ -84,19 +80,28 @@ export async function uploadMemories(meetingId: number, formData: FormData) {
   }
 
   const uploadPromises = files.map(async (file) => {
-    // PERBAIKAN: Deteksi ekstensi dengan aman, jika undefined pakai jpg
-    let fileExt = file.name.split('.').pop()?.toLowerCase()
-    if (!fileExt || fileExt === 'undefined' || fileExt === 'heic' || fileExt === 'heif') {
-      fileExt = 'jpg' // Paksa jadi jpg
+    // --- PROSES KOMPRESI GAMBAR ---
+    const options = {
+      maxSizeMB: 1, // Maksimal 1MB (biar ringan di HP)
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      fileType: 'image/jpeg' // Paksa jadi JPEG (buat jaga-jaga kalau dari iPhone/HEIC)
     }
 
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    let fileToUpload = file
+    try {
+      fileToUpload = await imageCompression(file, options)
+    } catch (error) {
+      console.log("Gagal kompresi, pakai file asli", error)
+    }
+
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
     const filePath = `meeting-${meetingId}/${fileName}`
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('memories')
-      .upload(filePath, file, {
-        contentType: file.type || 'image/jpeg', // Paksa contentType agar Supabase nggak bingung
+      .upload(filePath, fileToUpload, {
+        contentType: 'image/jpeg',
       })
 
     if (uploadError) throw new Error(uploadError.message)
@@ -120,12 +125,11 @@ export async function uploadMemories(meetingId: number, formData: FormData) {
     .eq('id', meetingId)
 
   if (updateError) throw new Error(updateError.message)
-
   revalidatePath('/meetings')
   revalidatePath('/')
 }
 
-// 6. UPLOAD MANUAL DARI GALERI (Tanpa terikat jadwal)
+// 6. UPLOAD MANUAL DARI GALERI
 export async function uploadManualMemories(formData: FormData) {
   const files = formData.getAll('files') as File[]
   const caption = formData.get('caption') as string
@@ -137,19 +141,28 @@ export async function uploadManualMemories(formData: FormData) {
   }
 
   const uploadPromises = files.map(async (file) => {
-    // PERBAIKAN: Deteksi ekstensi dengan aman, jika undefined pakai jpg
-    let fileExt = file.name.split('.').pop()?.toLowerCase()
-    if (!fileExt || fileExt === 'undefined' || fileExt === 'heic' || fileExt === 'heif') {
-      fileExt = 'jpg' // Paksa jadi jpg
+    // --- PROSES KOMPRESI GAMBAR ---
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      fileType: 'image/jpeg'
     }
 
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    let fileToUpload = file
+    try {
+      fileToUpload = await imageCompression(file, options)
+    } catch (error) {
+      console.log("Gagal kompresi, pakai file asli", error)
+    }
+
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
     const filePath = `manual-upload/${fileName}`
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('memories')
-      .upload(filePath, file, {
-        contentType: file.type || 'image/jpeg', // Paksa contentType agar Supabase nggak bingung
+      .upload(filePath, fileToUpload, {
+        contentType: 'image/jpeg',
       })
 
     if (uploadError) throw new Error(uploadError.message)
