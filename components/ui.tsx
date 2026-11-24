@@ -1,9 +1,10 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Plus, RefreshCw, Search } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, RefreshCw, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition, type ReactNode } from 'react'
 import { KETERANGAN } from '@/lib/constants'
+import { formatTanggalRingkas } from '@/lib/format'
 import { Sheet } from './Sheet'
 
 export function PageHeader({
@@ -135,7 +136,7 @@ export function Chip({ active, onClick, children }: { active: boolean; onClick: 
 }
 
 export const inputCls =
-  'block h-11 w-full min-w-0 max-w-full rounded-xl border border-line bg-white px-3 text-base outline-none focus:border-upload [&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-left'
+  'block h-11 w-full min-w-0 max-w-full rounded-xl border border-line bg-white px-3 text-base outline-none focus:border-upload'
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -155,5 +156,44 @@ export function SubmitButton({ busy, children }: { busy: boolean; children: Reac
     >
       {children}
     </button>
+  )
+}
+
+/**
+ * Pemilih tanggal/jam. Safari iOS tidak mau mengecilkan <input type=date|time> (lebarnya
+ * melar dan teksnya miring), jadi kotak yang terlihat dibuat sendiri, sedangkan input asli
+ * ditaruh transparan di atasnya agar pemilih bawaan iPhone tetap terbuka saat ditekan.
+ */
+export function PickerField({
+  label,
+  type,
+  value,
+  onChange,
+  required,
+}: {
+  label: string
+  type: 'date' | 'time'
+  value: string
+  onChange: (v: string) => void
+  required?: boolean
+}) {
+  const Icon = type === 'date' ? CalendarDays : Clock
+  const shown = value ? (type === 'date' ? formatTanggalRingkas(value) : value) : type === 'date' ? 'Pilih tanggal' : '--:--'
+  return (
+    <label className="block min-w-0">
+      <span className="mb-1 block text-sm font-medium text-muted">{label}</span>
+      <span className="relative flex h-11 w-full items-center justify-between overflow-hidden rounded-xl border border-line bg-white px-3 focus-within:border-upload">
+        <span className={`truncate text-base ${value ? '' : 'text-gray-400'}`}>{shown}</span>
+        <Icon size={18} className="shrink-0 text-muted" />
+        <input
+          type={type}
+          required={required}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-label={label}
+          className="absolute inset-0 size-full min-w-0 cursor-pointer opacity-0"
+        />
+      </span>
+    </label>
   )
 }

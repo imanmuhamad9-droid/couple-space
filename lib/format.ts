@@ -30,6 +30,16 @@ export function formatTanggalPanjang(iso: string): string {
   }).format(asUtc(iso))
 }
 
+/** "24 Nov 2026" */
+export function formatTanggalRingkas(iso: string): string {
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(asUtc(iso))
+}
+
 /** "24 Nov" */
 export function formatTanggalSingkat(iso: string): string {
   return new Intl.DateTimeFormat('id-ID', {

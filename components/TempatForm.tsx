@@ -6,7 +6,7 @@ import { useUpload } from '@/hooks/useUpload'
 import { KATEGORI, KOTA } from '@/lib/constants'
 import type { Tempat } from '@/lib/types'
 import { useFeedback } from './Feedback'
-import { Field, inputCls, SubmitButton } from './ui'
+import { Field, inputCls, PickerField, SubmitButton } from './ui'
 
 /** Isi sheet tambah/edit tempat. Di-mount baru tiap sheet dibuka. */
 export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone: () => void }) {
@@ -67,12 +67,8 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
         </Field>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
-        <Field label="Jam buka">
-          <input type="time" value={buka} onChange={(e) => setBuka(e.target.value)} className={inputCls} />
-        </Field>
-        <Field label="Jam tutup">
-          <input type="time" value={tutup} onChange={(e) => setTutup(e.target.value)} className={inputCls} />
-        </Field>
+        <PickerField label="Jam buka" type="time" value={buka} onChange={setBuka} />
+        <PickerField label="Jam tutup" type="time" value={tutup} onChange={setTutup} />
       </div>
       <Field label="Link Google Maps">
         <input

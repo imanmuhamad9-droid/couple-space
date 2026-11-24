@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { saveKegiatan } from '@/app/actions/kegiatan'
 import type { Kegiatan } from '@/lib/types'
 import { useFeedback } from './Feedback'
-import { Field, inputCls, SubmitButton } from './ui'
+import { Field, inputCls, PickerField, SubmitButton } from './ui'
 
 /** Isi sheet tambah/edit rencana. Di-mount baru tiap sheet dibuka, jadi state selalu segar. */
 export function KegiatanForm({
@@ -45,12 +45,8 @@ export function KegiatanForm({
   return (
     <form onSubmit={submit} className="space-y-3">
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
-        <Field label="Tanggal">
-          <input type="date" required value={tanggal} onChange={(e) => setTanggal(e.target.value)} className={inputCls} />
-        </Field>
-        <Field label="Jam">
-          <input type="time" required value={jam} onChange={(e) => setJam(e.target.value)} className={inputCls} />
-        </Field>
+        <PickerField label="Tanggal" type="date" required value={tanggal} onChange={setTanggal} />
+        <PickerField label="Jam" type="time" required value={jam} onChange={setJam} />
       </div>
       <Field label="Mau ngapain">
         <input
