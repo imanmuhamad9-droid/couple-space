@@ -1,11 +1,11 @@
 'use client'
 
-import { Check, MapPin, Pencil, Trash2 } from 'lucide-react'
+import { Check, ChevronRight, MapPin, Paperclip, Pencil, Trash2 } from 'lucide-react'
 import type { CSSProperties, HTMLAttributes } from 'react'
 import { isHttpLink } from '@/lib/geo'
 import { rupiah } from '@/lib/format'
 import type { Kegiatan } from '@/lib/types'
-import { PdfList, Thumbs, UploadButton } from './Photos'
+import { UploadButton } from './Photos'
 
 type Props = {
   item: Kegiatan
@@ -20,7 +20,8 @@ type Props = {
   onDone: () => void
   onEdit: () => void
   onDelete: () => void
-  onOpenPhoto: (index: number) => void
+  /** Buka popup detail (info acara + lampiran). */
+  onOpenDetail: () => void
 }
 
 const icon = 'grid size-9 place-items-center rounded-full active:scale-95'
@@ -37,7 +38,7 @@ export function KegiatanCard({
   onDone,
   onEdit,
   onDelete,
-  onOpenPhoto,
+  onOpenDetail,
 }: Props) {
   const done = item.status === 'terlaksana'
   const linkLokasi = isHttpLink(item.lokasi)
@@ -144,8 +145,22 @@ export function KegiatanCard({
         </div>
       </div>
 
-      <Thumbs fotos={item.fotos} onOpen={onOpenPhoto} />
-      <PdfList fotos={item.fotos} />
+      {item.fotos.length > 0 && (
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className={`mt-1.5 flex h-9 w-full items-center justify-between rounded-lg px-2.5 text-xs font-medium active:opacity-80 ${
+            active ? 'bg-white/20 text-white' : 'bg-gray-100 text-ink'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <Paperclip size={14} /> {item.fotos.length} lampiran
+          </span>
+          <span className="flex items-center gap-0.5 opacity-70">
+            Lihat detail <ChevronRight size={14} />
+          </span>
+        </button>
+      )}
     </article>
   )
 }

@@ -46,7 +46,7 @@ export const KETERANGAN = {
     'Tahan kartu sebentar lalu geser untuk mengubah urutan.',
     'Geser ke hari lain untuk memindahkan kegiatan ke tanggal tersebut.',
     'Jam akan menyesuaikan otomatis, jadi tidak ada yang bertabrakan.',
-    'Ikon biru: upload foto atau PDF (PDF maks 4 MB). Tekan PDF untuk membukanya langsung.',
+    'Ikon klip biru: upload foto atau PDF (PDF maks 4 MB). Tekan baris "lampiran" di kartu untuk melihat detail, foto, dan PDF-nya.',
     'Ceklis hijau: tandai terlaksana, kegiatan pindah ke Histori. Lampiran Rencana ikut dihapus, Histori mulai kosong.',
     'Pindah urutan dimatikan saat kamu sedang mencari.',
   ],
@@ -54,7 +54,7 @@ export const KETERANGAN = {
     'Kegiatan yang sudah terlaksana urut sesuai tanggal.',
     'Kegiatan di Histori tidak bisa diedit atau dihapus.',
     'Lampiran dari Rencana tidak ikut pindah. Foto atau PDF yang kamu unggah di sini yang tersimpan.',
-    'Tekan thumbnail untuk melihat foto dalam ukuran besar, tekan PDF untuk membukanya.',
+    'Tekan baris "lampiran" untuk melihat detail. Tekan foto untuk memperbesar, tekan PDF untuk membukanya.',
   ],
   database: [
     'Daftar tempat favoritmu, bisa difilter berdasarkan kategori dan kota.',

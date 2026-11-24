@@ -65,17 +65,27 @@ export async function deleteKegiatan(idRaw: string) {
 
 /**
  * Tandai terlaksana. Lampiran Rencana dihapus (Histori mulai kosong).
- * Jumlah kunjungan tempat tidak disimpan di sini: dihitung dari kegiatan terlaksana yang terhubung ke tempat itu.
+ * Jika `tempatIdRaw` dipilih dan kegiatan belum terhubung ke tempat, kegiatan dihubungkan ke tempat itu.
+ * Jumlah kunjungan tidak disimpan: dihitung dari kegiatan terlaksana yang terhubung ke tempat.
  */
-export async function markTerlaksana(idRaw: string) {
+export async function markTerlaksana(idRaw: string, tempatIdRaw?: string | null) {
   return run(async () => {
     const id = Id.parse(idRaw)
-    if ((await statusOf(id)) !== 'rencana') throw new Error('Kegiatan ini sudah terlaksana')
+    const picked = tempatIdRaw ? Id.parse(tempatIdRaw) : null
+
+    const cur = must(await admin().from('kegiatan').select('*').eq('id', id).maybeSingle())
+    if (!cur.data) throw new Error('Kegiatan tidak ditemukan')
+    const row = cur.data as { status: string; tempat_id?: string | null }
+    if (row.status !== 'rencana') throw new Error('Kegiatan ini sudah terlaksana')
 
     must(
       await admin()
         .from('kegiatan')
-        .update({ status: 'terlaksana', terlaksana_at: new Date().toISOString() })
+        .update({
+          status: 'terlaksana',
+          terlaksana_at: new Date().toISOString(),
+          ...(picked && !row.tempat_id ? { tempat_id: picked } : {}),
+        })
         .eq('id', id)
         .eq('status', 'rencana'),
     )

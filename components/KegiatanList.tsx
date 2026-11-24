@@ -11,8 +11,10 @@ import { kegiatanBerlangsung, moveItem } from '@/lib/schedule'
 import type { Kegiatan, TempatRingkas } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { KegiatanCard } from './KegiatanCard'
+import { KegiatanDetail } from './KegiatanDetail'
 import { KegiatanForm } from './KegiatanForm'
 import { PhotoViewer } from './Photos'
+import { PlaceSuggest } from './PlaceSuggest'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { Empty, Fab, PageHeader, Pagination, SearchBox } from './ui'
 
@@ -36,6 +38,62 @@ function haystack(k: Kegiatan) {
     .toLowerCase()
 }
 
+/** Isi sheet "terlaksana": tempat boleh dipilih dari Database (opsional) agar tercatat sebagai kunjungan. */
+function DoneBody({
+  item,
+  tempat,
+  onCancel,
+  onConfirm,
+}: {
+  item: Kegiatan
+  tempat: TempatRingkas[]
+  onCancel: () => void
+  onConfirm: (tempatId: string | null) => void
+}) {
+  const linked = tempat.find((t) => t.id === item.tempatId) ?? null
+  const [text, setText] = useState('')
+  const [picked, setPicked] = useState<TempatRingkas | null>(null)
+
+  return (
+    <div className="space-y-3">
+      {linked ? (
+        <p className="rounded-xl bg-done/10 px-3 py-2 text-sm text-done">
+          Kunjungan ke <strong>{linked.nama}</strong> akan bertambah 1.
+        </p>
+      ) : (
+        <PlaceSuggest
+          label="Di tempat mana? (boleh dilewati)"
+          places={tempat}
+          value={text}
+          picked={picked}
+          onText={(v) => {
+            setText(v)
+            if (picked && v !== picked.nama) setPicked(null)
+          }}
+          onPick={(t) => {
+            setPicked(t)
+            setText(t.nama)
+          }}
+          placeholder="Ketik nama tempat dari Database"
+          maxLength={150}
+        />
+      )}
+      <div className="grid grid-cols-2 gap-3 pt-1">
+        <button type="button" onClick={onCancel} className="h-12 rounded-xl bg-gray-100 font-semibold">
+          Batal
+        </button>
+        <button
+          type="button"
+          onClick={() => onConfirm(linked ? null : (picked?.id ?? null))}
+          className="h-12 rounded-xl bg-done font-semibold text-white"
+        >
+          Ya, terlaksana
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function KegiatanList({
   mode,
   items,
@@ -53,7 +111,8 @@ export function KegiatanList({
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Kegiatan | null>(null)
   const [confirm, setConfirm] = useState<{ kind: 'done' | 'delete'; item: Kegiatan } | null>(null)
-  const [viewer, setViewer] = useState<{ ownerId: string; index: number } | null>(null)
+  const [viewer, setViewer] = useState<{ ownerId: string; index: number; back?: boolean } | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(null)
 
   // Hasil geser ditampilkan langsung (optimistis) sampai data dari server tiba.
   const [lastItems, setLastItems] = useState(items)
@@ -117,6 +176,10 @@ export function KegiatanList({
 
   const tempatById = useMemo(() => new Map(tempat.map((t) => [t.id, t])), [tempat])
 
+  const mapsFor = (k: Kegiatan) =>
+    k.tempatId && tempatById.has(k.tempatId) ? mapsUrl(tempatById.get(k.tempatId)!) : undefined
+  const detail = detailId ? (merged.find((k) => k.id === detailId) ?? null) : null
+
   const viewerFotos = viewer ? (merged.find((k) => k.id === viewer.ownerId)?.fotos ?? []).filter((f) => !f.pdf) : []
   const title = mode === 'rencana' ? 'Rencana' : 'Histori'
 
@@ -171,13 +234,13 @@ export function KegiatanList({
                         mode={mode}
                         dragging={isDragged}
                         active={item.id === aktifId}
-                        mapsHref={item.tempatId && tempatById.has(item.tempatId) ? mapsUrl(tempatById.get(item.tempatId)!) : undefined}
+                        mapsHref={mapsFor(item)}
                         style={isDragged ? { transform: `translateY(${dy}px)` } : undefined}
                         dragProps={mode === 'rencana' ? bind(item.id) : undefined}
                         onDone={() => setConfirm({ kind: 'done', item })}
                         onEdit={() => openForm(item)}
                         onDelete={() => setConfirm({ kind: 'delete', item })}
-                        onOpenPhoto={(index) => setViewer({ ownerId: item.id, index })}
+                        onOpenDetail={() => setDetailId(item.id)}
                       />
                     </div>
                   )
@@ -196,14 +259,20 @@ export function KegiatanList({
         <KegiatanForm initial={editing} today={today} tempat={tempat} onDone={() => setFormOpen(false)} />
       </Sheet>
 
-      <ConfirmSheet
-        open={confirm?.kind === 'done'}
-        title="Sudah terlaksana?"
-        message={`"${confirm?.item.kegiatan ?? ''}"`}
-        confirmLabel="Ya"
-        onClose={() => setConfirm(null)}
-        onConfirm={() => confirm && track(markTerlaksana(confirm.item.id), 'Pindah ke Histori', 'Memproses...')}
-      />
+      <Sheet open={confirm?.kind === 'done'} title="Yakin sudah terlaksana?" onClose={() => setConfirm(null)}>
+        {confirm?.kind === 'done' && (
+          <DoneBody
+            item={confirm.item}
+            tempat={tempat}
+            onCancel={() => setConfirm(null)}
+            onConfirm={(tempatId) => {
+              const id = confirm.item.id
+              setConfirm(null)
+              track(markTerlaksana(id, tempatId), 'Pindah ke Histori', 'Memproses...')
+            }}
+          />
+        )}
+      </Sheet>
       <ConfirmSheet
         open={confirm?.kind === 'delete'}
         title="Hapus rencana?"
@@ -214,8 +283,29 @@ export function KegiatanList({
         onConfirm={() => confirm && track(deleteKegiatan(confirm.item.id), 'Dihapus', 'Menghapus...')}
       />
 
+      <Sheet open={detail !== null} title={detail?.kegiatan ?? ''} onClose={() => setDetailId(null)}>
+        {detail && (
+          <KegiatanDetail
+            item={detail}
+            mapsHref={mapsFor(detail)}
+            onOpenPhoto={(index) => {
+              // Penampil foto layar penuh ada di bawah sheet, jadi sheet ditutup dulu dan dibuka lagi saat penampil ditutup.
+              setDetailId(null)
+              setViewer({ ownerId: detail.id, index, back: true })
+            }}
+          />
+        )}
+      </Sheet>
+
       {viewer && (
-        <PhotoViewer fotos={viewerFotos} startIndex={viewer.index} onClose={() => setViewer(null)} />
+        <PhotoViewer
+          fotos={viewerFotos}
+          startIndex={viewer.index}
+          onClose={() => {
+            if (viewer.back) setDetailId(viewer.ownerId)
+            setViewer(null)
+          }}
+        />
       )}
     </>
   )

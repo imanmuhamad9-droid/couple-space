@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Download, FileText, Trash2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, FileText, ImagePlus, Paperclip, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { deleteFoto } from '@/app/actions/foto'
 import { useUpload } from '@/hooks/useUpload'
@@ -8,29 +8,22 @@ import type { FotoItem } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { ConfirmSheet } from './Sheet'
 
-/** Barisan thumbnail foto (maks 4 + "+N"). PDF tidak dihitung di sini; lihat PdfList. `onOpen` memakai indeks di antara foto saja. */
-export function Thumbs({ fotos, max = 4, onOpen }: { fotos: FotoItem[]; max?: number; onOpen: (i: number) => void }) {
+/** Kisi foto (semua foto, kotak). PDF tidak ikut; lihat PdfList. `onOpen` memakai indeks di antara foto saja. */
+export function PhotoGrid({ fotos, onOpen }: { fotos: FotoItem[]; onOpen: (i: number) => void }) {
   const images = fotos.filter((f) => !f.pdf)
   if (images.length === 0) return null
-  const shown = images.slice(0, max)
-  const extra = images.length - shown.length
   return (
-    <div className="mt-1.5 flex gap-1.5">
-      {shown.map((f, i) => (
+    <div className="grid grid-cols-3 gap-1.5">
+      {images.map((f, i) => (
         <button
           key={f.id}
           type="button"
           onClick={() => onOpen(i)}
           aria-label={`Buka foto ${i + 1}`}
-          className="relative size-11 shrink-0 overflow-hidden rounded-md bg-gray-200"
+          className="aspect-square overflow-hidden rounded-lg bg-gray-200"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={f.url} alt="" loading="lazy" className="size-full object-cover" />
-          {extra > 0 && i === shown.length - 1 && (
-            <span className="absolute inset-0 grid place-items-center bg-black/55 text-xs font-semibold text-white">
-              +{extra}
-            </span>
-          )}
         </button>
       ))}
     </div>
@@ -44,7 +37,7 @@ export function PdfList({ fotos }: { fotos: FotoItem[] }) {
   const pdfs = fotos.filter((f) => f.pdf)
   if (pdfs.length === 0) return null
   return (
-    <div className="mt-1.5 space-y-1">
+    <div className="mt-2 space-y-1">
       {pdfs.map((f) => (
         <div key={f.id} className="flex items-center gap-1 rounded-lg bg-gray-100 py-0.5 pl-2 pr-0.5 text-ink">
           <a
@@ -79,28 +72,6 @@ export function PdfList({ fotos }: { fotos: FotoItem[] }) {
   )
 }
 
-/** Ikon folder biru dengan panah unggah (dua nada biru, badan terang). */
-function UploadFolderIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 48 48"
-      fill="none"
-      stroke="#0a4aa6"
-      strokeWidth="2.2"
-      strokeLinejoin="round"
-      strokeLinecap="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M5 13a3 3 0 0 1 3-3h10.5l4 3.5H42a3 3 0 0 1 3 3V18H5v-5Z" fill="#4c8ff5" />
-      <rect x="3" y="15.5" width="42" height="27" rx="3.5" fill="#f4f5f7" />
-      <circle cx="24" cy="28.5" r="9" fill="#4c8ff5" />
-      <path d="M24 22.5 18.5 28.5h3.3V34h4.4v-5.5h3.3L24 22.5Z" fill="#f4f5f7" />
-      <path d="M8 39h6.5M18 39h.1" />
-    </svg>
-  )
-}
-
 /** Tombol ikon biru: pilih foto (dikecilkan dulu) atau PDF, lalu upload. */
 export function UploadButton({
   kind,
@@ -123,9 +94,9 @@ export function UploadButton({
         type="button"
         aria-label={allowPdf ? 'Upload foto atau PDF' : 'Upload foto'}
         onClick={() => input.current?.click()}
-        className={`grid size-9 place-items-center rounded-lg active:scale-95 ${light ? 'bg-white/90' : ''}`}
+        className={`grid size-9 place-items-center rounded-full text-white active:scale-95 ${light ? 'bg-white/25' : 'bg-upload'}`}
       >
-        <UploadFolderIcon className="size-8" />
+        {allowPdf ? <Paperclip size={16} /> : <ImagePlus size={16} />}
       </button>
       <input
         ref={input}
