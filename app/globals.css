@@ -1,113 +1,52 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-bg: #f6f7f9;
+  --color-ink: #111827;
+  --color-muted: #6b7280;
+  --color-line: #e5e7eb;
+  --color-upload: #2563eb;
+  --color-done: #16a34a;
+  --color-edit: #f97316;
+  --color-del: #dc2626;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  /* Memaksa browser tidak mengubah warna teks/background di mode gelap */
-  color-scheme: light; 
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Paksa semua input form agar teksnya hitam dan backgroundnya putih */
-input, textarea, select {
-  color: #111827 !important;
-  background-color: #ffffff !important;
+/* 16 px agar Safari iOS tidak zoom saat input difokus */
+input,
+select,
+textarea {
+  font-size: 16px;
 }
 
-/* Pertegas warna placeholder agar tidak terlalu pudar */
-input::placeholder, textarea::placeholder {
-  color: #6b7280 !important;
-  opacity: 1;
+.sheet-in {
+  animation: sheet-in 0.22s ease-out;
 }
 
-/* Styling tambahan untuk React Datepicker */
-.react-datepicker {
-  font-family: inherit !important;
-  border: none !important;
-  border-radius: 1rem !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
-}
-.react-datepicker__header {
-  background-color: white !important;
-  border-bottom: 1px solid #f3f4f6 !important;
-  border-top-left-radius: 1rem !important;
-  border-top-right-radius: 1rem !important;
-  padding-top: 12px !important;
-}
-.react-datepicker__day--selected {
-  background-color: black !important;
-  border-radius: 0.5rem !important;
-}
-.react-datepicker__day:hover {
-  border-radius: 0.5rem !important;
-}
-.react-datepicker__time-container {
-  border-left: 1px solid #f3f4f6 !important;
-}
-.react-datepicker__time-list-item--selected {
-  background-color: black !important;
+@keyframes sheet-in {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-:root {
-  /* Warna Default (Biru) */
-  --theme-primary: #3b82f6; /* blue-500 */
-  --theme-primary-light: #eff6ff; /* blue-50 */
-  --theme-primary-dark: #1d4ed8; /* blue-700 */
-  --theme-gradient-from: #3b82f6;
-  --theme-gradient-to: #22d3ee;
-}
-
-/* Tema Pink */
-[data-theme="pink"] {
-  --theme-primary: #ec4899;
-  --theme-primary-light: #fdf2f8;
-  --theme-primary-dark: #be185d;
-  --theme-gradient-from: #ec4899;
-  --theme-gradient-to: #f472b6;
-}
-
-/* Tema Hijau */
-[data-theme="green"] {
-  --theme-primary: #10b981;
-  --theme-primary-light: #ecfdf5;
-  --theme-primary-dark: #047857;
-  --theme-gradient-from: #10b981;
-  --theme-gradient-to: #34d399;
-}
-
-/* Tema Ungu */
-[data-theme="purple"] {
-  --theme-primary: #8b5cf6;
-  --theme-primary-light: #f5f3ff;
-  --theme-primary-dark: #6d28d9;
-  --theme-gradient-from: #8b5cf6;
-  --theme-gradient-to: #a78bfa;
-}
-
-/* Background Tekstur Kertas (Pola CSS Murni, Pasti Muncul di HP) */
-.bg-paper-texture {
-  background-color: var(--theme-primary-light);
-  background-image: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.02) 2px,
-    rgba(0, 0, 0, 0.02) 4px
-  );
-}
-
-.font-slab {
-  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+@media (prefers-reduced-motion: reduce) {
+  .sheet-in {
+    animation: none;
+  }
 }

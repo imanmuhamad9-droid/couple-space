@@ -1,20 +1,23 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb', // <-- Ini untuk upload file besar dari HP
-    },
+    // Foto sudah dikecilkan di browser (<1 MB), jadi 8 MB lebih dari cukup.
+    serverActions: { bodySizeLimit: '8mb' },
   },
-  cacheComponents: true, // <-- WAJIB ADA untuk `export const instant = false`
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'same-origin' },
+        ],
       },
-    },
+    ]
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig
