@@ -1,9 +1,9 @@
 'use client'
 
-import { LocateFixed, Map as MapIcon } from 'lucide-react'
+import { ArrowUpDown, Check, LocateFixed, Map as MapIcon } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useMemo, useState } from 'react'
-import { deleteTempat } from '@/app/actions/tempat'
+import { deleteTempat, tambahKunjungan } from '@/app/actions/tempat'
 import { useLocation } from '@/hooks/useLocation'
 import { KATEGORI, KOTA, TEMPAT_PER_HALAMAN } from '@/lib/constants'
 import { haversineKm } from '@/lib/geo'
@@ -21,6 +21,15 @@ const MapView = dynamic(() => import('./MapView'), {
   loading: () => <div className="fixed inset-0 z-50 grid place-items-center bg-gray-200 text-muted">Memuat peta...</div>,
 })
 
+type Urut = 'nama' | 'baru' | 'dekat' | 'sering'
+
+const URUTAN: { id: Urut; label: string; hint: string }[] = [
+  { id: 'nama', label: 'Nama A-Z', hint: 'Urut abjad' },
+  { id: 'baru', label: 'Baru ditambahkan', hint: 'Yang terakhir kamu tambah di atas' },
+  { id: 'dekat', label: 'Terdekat', hint: 'Dari posisimu sekarang' },
+  { id: 'sering', label: 'Paling sering dikunjungi', hint: 'Berdasarkan hitungan kunjungan' },
+]
+
 export function TempatList({ items }: { items: Tempat[] }) {
   const { track, toast } = useFeedback()
   const { me, locating, locate, setManual } = useLocation()
@@ -35,6 +44,8 @@ export function TempatList({ items }: { items: Tempat[] }) {
   const [manualOpen, setManualOpen] = useState(false)
   const [manualText, setManualText] = useState('')
   const [mapOpen, setMapOpen] = useState(false)
+  const [urut, setUrut] = useState<Urut>('nama')
+  const [urutOpen, setUrutOpen] = useState(false)
 
   // Chip hanya tampil untuk nilai yang punya data; urutan mengikuti daftar tetap.
   const kategoriAda = KATEGORI.filter((k) => items.some((t) => t.kategori === k))
@@ -54,9 +65,15 @@ export function TempatList({ items }: { items: Tempat[] }) {
         t,
         km: me && t.lat !== null && t.lng !== null ? haversineKm(me, { lat: t.lat, lng: t.lng }) : null,
       }))
-    if (me) list.sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity))
+    const byNama = (a: (typeof list)[number], b: (typeof list)[number]) => a.t.nama.localeCompare(b.t.nama, 'id')
+    list.sort((a, b) => {
+      if (urut === 'dekat' && me) return (a.km ?? Infinity) - (b.km ?? Infinity) || byNama(a, b)
+      if (urut === 'baru') return b.t.createdAt.localeCompare(a.t.createdAt) || byNama(a, b)
+      if (urut === 'sering') return b.t.kunjungan - a.t.kunjungan || byNama(a, b)
+      return byNama(a, b)
+    })
     return list
-  }, [items, q, kategori, kota, me])
+  }, [items, q, kategori, kota, me, urut])
 
   const pages = Math.max(1, Math.ceil(rows.length / TEMPAT_PER_HALAMAN))
   const cur = Math.min(page, pages - 1)
@@ -75,6 +92,13 @@ export function TempatList({ items }: { items: Tempat[] }) {
   }
 
   const reset = () => setPage(0)
+
+  async function pilihUrut(u: Urut) {
+    setUrutOpen(false)
+    setUrut(u)
+    reset()
+    if (u === 'dekat' && !me) await onLocate() // butuh posisi; jika GPS gagal, isian manual terbuka
+  }
 
   return (
     <>
@@ -110,6 +134,18 @@ export function TempatList({ items }: { items: Tempat[] }) {
           reset()
         }}
         placeholder="Cari nama, kategori, kota..."
+        right={
+          <button
+            type="button"
+            onClick={() => setUrutOpen(true)}
+            aria-label="Urutkan"
+            className={`flex h-11 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm font-medium ${
+              urut === 'nama' ? 'border-line bg-white text-muted' : 'border-upload bg-upload/10 text-upload'
+            }`}
+          >
+            <ArrowUpDown size={16} /> Urutkan
+          </button>
+        }
       />
 
       {kategoriAda.length > 0 && (
@@ -149,6 +185,7 @@ export function TempatList({ items }: { items: Tempat[] }) {
               onEdit={() => openForm(t)}
               onDelete={() => setDeleting(t)}
               onOpenPhoto={() => setViewerId(t.id)}
+              onVisit={() => track(tambahKunjungan(t.id), 'Kunjungan +1', 'Menyimpan...')}
             />
           ))}
         </div>
@@ -170,6 +207,29 @@ export function TempatList({ items }: { items: Tempat[] }) {
         onClose={() => setDeleting(null)}
         onConfirm={() => deleting && track(deleteTempat(deleting.id), 'Dihapus', 'Menghapus...')}
       />
+
+      <Sheet open={urutOpen} title="Urutkan" onClose={() => setUrutOpen(false)}>
+        <ul className="space-y-1">
+          {URUTAN.map((o) => (
+            <li key={o.id}>
+              <button
+                type="button"
+                onClick={() => pilihUrut(o.id)}
+                aria-pressed={urut === o.id}
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-left ${
+                  urut === o.id ? 'bg-upload/10' : 'active:bg-gray-100'
+                }`}
+              >
+                <span>
+                  <span className="block font-medium">{o.label}</span>
+                  <span className="block text-xs text-muted">{o.hint}</span>
+                </span>
+                {urut === o.id && <Check size={18} className="text-upload" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Sheet>
 
       <Sheet open={manualOpen} title="Isi lokasi kamu" onClose={() => setManualOpen(false)}>
         <form

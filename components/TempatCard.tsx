@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, ImageIcon, Pencil, Trash2 } from 'lucide-react'
+import { CheckCheck, ExternalLink, ImageIcon, Pencil, Trash2 } from 'lucide-react'
 import { mapsUrl } from '@/lib/geo'
 import type { Tempat } from '@/lib/types'
 import { UploadButton } from './Photos'
@@ -14,12 +14,14 @@ export function TempatCard({
   onEdit,
   onDelete,
   onOpenPhoto,
+  onVisit,
 }: {
   tempat: Tempat
   km: number | null
   onEdit: () => void
   onDelete: () => void
   onOpenPhoto: () => void
+  onVisit: () => void
 }) {
   const first = t.fotos[0]
   const jam = t.buka && t.tutup ? `Buka ${t.buka} - ${t.tutup}` : 'Jam belum diisi'
@@ -58,6 +60,16 @@ export function TempatCard({
           {jarak && (
             <p className={`truncate text-xs ${km !== null ? 'font-medium text-upload' : 'text-muted'}`}>{jarak}</p>
           )}
+          <button
+            type="button"
+            onClick={onVisit}
+            aria-label={`Tandai dikunjungi, sekarang ${t.kunjungan} kali`}
+            className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium active:scale-95 ${
+              t.kunjungan > 0 ? 'bg-done/10 text-done' : 'bg-gray-100 text-muted'
+            }`}
+          >
+            <CheckCheck size={13} /> {t.kunjungan > 0 ? `Dikunjungi ${t.kunjungan}×` : 'Belum dikunjungi'}
+          </button>
         </div>
       </div>
 

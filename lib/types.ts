@@ -23,6 +23,10 @@ export type Tempat = {
   linkMaps: string
   lat: number | null
   lng: number | null
+  /** Berapa kali dikunjungi (dihitung manual). */
+  kunjungan: number
+  /** ISO timestamp, untuk urutan "terbaru ditambahkan". */
+  createdAt: string
   fotos: FotoItem[]
 }
 

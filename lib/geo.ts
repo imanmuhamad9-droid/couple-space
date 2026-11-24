@@ -31,7 +31,58 @@ export function parseCoords(text: string): Coords | null {
       if (c) return c
     }
   }
+  // Link tempat Google tanpa koordinat: `!1s0x<cell>:0x<id>`. Bagian pertama adalah kode sel S2 yang bisa didekode.
+  const ftid = s.match(/!1s(0x[0-9a-f]+):0x[0-9a-f]+/i)
+  if (ftid) return s2ToCoords(BigInt(ftid[1]))
   return null
+}
+
+const POS_TO_IJ = [
+  [0, 1, 3, 2],
+  [0, 2, 3, 1],
+  [3, 2, 0, 1],
+  [3, 1, 0, 2],
+]
+const POS_TO_ORIENT = [1, 0, 0, 3]
+
+/** Titik tengah sel S2 sebagai lat/lng. Hasil perkiraan (bisa meleset ratusan meter). Null jika tidak masuk akal. */
+export function s2ToCoords(id: bigint): Coords | null {
+  const lsb = id & -id
+  if (lsb === BigInt(0)) return null
+  const face = Number(id >> BigInt(61))
+  const level = 30 - Math.floor((lsb.toString(2).length - 1) / 2)
+  if (face > 5 || level < 0 || level > 30) return null
+
+  let orient = face & 1
+  let i = 0
+  let j = 0
+  for (let l = 0; l < level; l++) {
+    const pos = Number((id >> BigInt(59 - 2 * l)) & BigInt(3))
+    const ij = POS_TO_IJ[orient][pos]
+    i = i * 2 + (ij >> 1)
+    j = j * 2 + (ij & 1)
+    orient ^= POS_TO_ORIENT[pos]
+  }
+  const size = 2 ** (30 - level)
+  const toUv = (v: number) => {
+    const s = (v * size + size / 2) / 2 ** 30
+    return s >= 0.5 ? (4 * s * s - 1) / 3 : (1 - 4 * (1 - s) ** 2) / 3
+  }
+  const u = toUv(i)
+  const v = toUv(j)
+  const [x, y, z] = [
+    [1, u, v],
+    [-u, 1, v],
+    [-u, -v, 1],
+    [-1, -v, -u],
+    [v, -1, -u],
+    [v, u, -1],
+  ][face]
+  const lat = (Math.atan2(z, Math.hypot(x, y)) * 180) / Math.PI
+  const lng = (Math.atan2(y, x) * 180) / Math.PI
+  // Asia Tenggara saja; kode di luar itu (atau lat = lng) adalah hasil dekode yang rusak.
+  if (lat < -12 || lat > 25 || lng < 92 || lng > 142 || Math.abs(lat - lng) < 0.01) return null
+  return { lat, lng }
 }
 
 function safe(s: string) {

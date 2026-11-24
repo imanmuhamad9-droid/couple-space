@@ -57,22 +57,28 @@ export function SearchBox({
   value,
   onChange,
   placeholder,
+  right,
 }: {
   value: string
   onChange: (v: string) => void
   placeholder: string
+  /** Tombol di sebelah kanan kolom cari (mis. Urutkan). */
+  right?: ReactNode
 }) {
   return (
-    <div className="relative mx-4 mb-3">
-      <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-      <input
-        type="search"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        aria-label={placeholder}
-        className="h-11 w-full rounded-xl border border-line bg-white pl-10 pr-3 text-base outline-none focus:border-upload"
-      />
+    <div className="mx-4 mb-3 flex gap-2">
+      <div className="relative min-w-0 flex-1">
+        <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+        <input
+          type="search"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          aria-label={placeholder}
+          className="h-11 w-full rounded-xl border border-line bg-white pl-10 pr-3 text-base outline-none focus:border-upload"
+        />
+      </div>
+      {right}
     </div>
   )
 }

@@ -106,7 +106,7 @@ export function KegiatanCard({
                 type="button"
                 aria-label="Tandai terlaksana"
                 onClick={onDone}
-                className={`${icon} border-2 ${active ? 'border-white text-white' : 'border-done text-done'}`}
+                className={`${icon} bg-done text-white`}
               >
                 <Check size={16} strokeWidth={3} />
               </button>

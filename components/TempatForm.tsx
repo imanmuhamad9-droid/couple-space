@@ -19,6 +19,7 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
   const [buka, setBuka] = useState(initial?.buka ?? '')
   const [tutup, setTutup] = useState(initial?.tutup ?? '')
   const [linkMaps, setLinkMaps] = useState(initial?.linkMaps ?? '')
+  const [kunjungan, setKunjungan] = useState(String(initial?.kunjungan ?? 0))
   const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
 
@@ -34,6 +35,7 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
         buka,
         tutup,
         linkMaps,
+        kunjungan: initial ? Number(kunjungan || 0) : undefined,
       }),
     )
     if (r.ok) {
@@ -79,6 +81,18 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
           className={inputCls}
         />
       </Field>
+
+      {initial && (
+        <Field label="Jumlah kunjungan">
+          <input
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={kunjungan}
+            onChange={(e) => setKunjungan(e.target.value.replace(/\D/g, ''))}
+            className={inputCls}
+          />
+        </Field>
+      )}
 
       <div>
         <button

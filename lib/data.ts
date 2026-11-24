@@ -57,7 +57,7 @@ export async function listKegiatan(status: Status): Promise<Kegiatan[]> {
 export async function listTempat(): Promise<Tempat[]> {
   const res = await admin()
     .from('tempat')
-    .select('id, nama, kategori, kota, buka, tutup, link_maps, lat, lng, foto(id, storage_path, created_at)')
+    .select('*, foto(id, storage_path, created_at)')
     .order('nama', { ascending: true })
   if (res.error) throw new Error(res.error.message)
 
@@ -73,6 +73,8 @@ export async function listTempat(): Promise<Tempat[]> {
     linkMaps: r.link_maps,
     lat: r.lat,
     lng: r.lng,
+    kunjungan: (r.kunjungan as number | undefined) ?? 0,
+    createdAt: r.created_at as string,
     fotos: toItems(r.foto as FotoRow[], urls),
   }))
 }

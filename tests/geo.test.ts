@@ -16,6 +16,21 @@ describe('parseCoords', () => {
   it('link dengan ?q=lat,lng', () => {
     expect(parseCoords('https://maps.google.com/?q=-7.25,112.75')).toEqual({ lat: -7.25, lng: 112.75 })
   })
+  it('link tempat Google tanpa koordinat: didekode dari kode tempat', () => {
+    const seniman = parseCoords(
+      'https://www.google.com/maps/place/Seniman+Coffee+Studio/data=!4m2!3m1!1s0x2dd23d6a065b98bb:0x6fa247aced3b9ae2',
+    )
+    expect(seniman?.lat).toBeCloseTo(-8.5053, 3)
+    expect(seniman?.lng).toBeCloseTo(115.2654, 3)
+    const changi = parseCoords(
+      'https://www.google.com/maps/place/Terminal+1/data=!4m2!3m1!1s0x31da3c89a3c3b2ed:0xd0e818ee3ec7554f',
+    )
+    expect(changi?.lat).toBeCloseTo(1.3612, 3)
+    expect(changi?.lng).toBeCloseTo(103.9915, 3)
+  })
+  it('kode tempat yang rusak tidak jadi koordinat ngawur', () => {
+    expect(parseCoords('https://www.google.com/maps/place/X/data=!4m2!3m1!1s0x5045cac6dd5666b:0xa20ec64c8cffc80c')).toBeNull()
+  })
   it('menolak teks biasa dan koordinat di luar rentang', () => {
     expect(parseCoords('Kopi Tuku Cipete')).toBeNull()
     expect(parseCoords('200, 300')).toBeNull()
