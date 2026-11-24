@@ -44,7 +44,7 @@ export function KegiatanForm({
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
         <Field label="Tanggal">
           <input type="date" required value={tanggal} onChange={(e) => setTanggal(e.target.value)} className={inputCls} />
         </Field>

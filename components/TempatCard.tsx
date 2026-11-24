@@ -26,7 +26,8 @@ export function TempatCard({
 }) {
   const first = t.fotos[0]
   return (
-    <article className="flex gap-3 rounded-[14px] bg-white p-3 shadow-sm">
+    <article className="rounded-[14px] bg-white p-3 shadow-sm">
+      <div className="flex gap-3">
       <button
         type="button"
         onClick={onOpenPhoto}
@@ -61,12 +62,15 @@ export function TempatCard({
           km !== null && <p className="text-sm font-medium text-upload">± {km.toFixed(1)} km dari kamu</p>
         )}
 
-        <div className="mt-2 flex items-center gap-2">
+      </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
           <a
             href={mapsUrl(t)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-9 items-center gap-1.5 rounded-full bg-upload/10 px-3 text-sm font-medium text-upload"
+            className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-upload/10 px-3 text-sm font-medium text-upload"
           >
             <ExternalLink size={15} /> Buka di Maps
           </a>
@@ -90,7 +94,6 @@ export function TempatCard({
             </button>
           </span>
         </div>
-      </div>
     </article>
   )
 }

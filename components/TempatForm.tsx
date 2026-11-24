@@ -50,7 +50,7 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
       <Field label="Nama tempat">
         <input required maxLength={150} value={nama} onChange={(e) => setNama(e.target.value)} className={inputCls} />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
         <Field label="Kategori">
           <select value={kategori} onChange={(e) => setKategori(e.target.value)} className={inputCls}>
             {KATEGORI.map((k) => (
@@ -66,11 +66,11 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
           </select>
         </Field>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Buka">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
+        <Field label="Jam buka">
           <input type="time" value={buka} onChange={(e) => setBuka(e.target.value)} className={inputCls} />
         </Field>
-        <Field label="Tutup">
+        <Field label="Jam tutup">
           <input type="time" value={tutup} onChange={(e) => setTutup(e.target.value)} className={inputCls} />
         </Field>
       </div>

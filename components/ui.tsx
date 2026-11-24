@@ -1,7 +1,8 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { ChevronLeft, ChevronRight, Plus, RefreshCw, Search } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useState, useTransition, type ReactNode } from 'react'
 import { KETERANGAN } from '@/lib/constants'
 import { Sheet } from './Sheet'
 
@@ -15,11 +16,22 @@ export function PageHeader({
   right?: ReactNode
 }) {
   const [open, setOpen] = useState(false)
+  const router = useRouter()
+  const [refreshing, startRefresh] = useTransition()
   return (
     <header className="flex items-center justify-between px-4 pb-3 pt-[calc(20px+env(safe-area-inset-top))]">
       <h1 className="text-[28px] font-bold leading-tight">{title}</h1>
       <div className="flex items-center gap-2">
         {right}
+        <button
+          type="button"
+          onClick={() => startRefresh(() => router.refresh())}
+          disabled={refreshing}
+          aria-label="Muat ulang data"
+          className="grid size-8 place-items-center rounded-full bg-gray-200 text-muted"
+        >
+          <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+        </button>
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -123,11 +135,11 @@ export function Chip({ active, onClick, children }: { active: boolean; onClick: 
 }
 
 export const inputCls =
-  'h-12 w-full rounded-xl border border-line bg-white px-3 text-base outline-none focus:border-upload'
+  'block h-12 w-full min-w-0 max-w-full appearance-none rounded-xl border border-line bg-white px-3 text-base outline-none focus:border-upload'
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="mb-1 block text-sm font-medium text-muted">{label}</span>
       {children}
     </label>
