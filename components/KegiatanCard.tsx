@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, ChevronRight, MapPin, Paperclip, Pencil, Trash2 } from 'lucide-react'
+import { Check, ChevronRight, ExternalLink, MapPin, Paperclip, Pencil, Trash2 } from 'lucide-react'
 import type { CSSProperties, HTMLAttributes } from 'react'
 import { isHttpLink } from '@/lib/geo'
 import { rupiah } from '@/lib/format'
@@ -42,6 +42,9 @@ export function KegiatanCard({
 }: Props) {
   const done = item.status === 'terlaksana'
   const linkLokasi = isHttpLink(item.lokasi)
+  // Tujuan Maps: tempat dari Database, atau lokasi yang isinya link. Teks lokasi biasa tetap tampil sebagai teks.
+  const mapsLink = mapsHref ?? (linkLokasi ? item.lokasi.trim() : undefined)
+  const textLokasi = item.lokasi !== '' && !linkLokasi
   return (
     <article
       data-card-id={item.id}
@@ -81,38 +84,34 @@ export function KegiatanCard({
         )}
       </div>
 
-      <div className="mt-1 flex items-center gap-2">
-        <div className={`min-w-0 flex-1 space-y-0.5 text-xs ${active ? 'text-white/90' : 'text-muted'}`}>
-          {item.lokasi &&
-            (mapsHref ? (
-              <a
-                href={mapsHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`flex items-center gap-1 font-medium ${active ? 'text-white underline' : 'text-upload'}`}
-              >
-                <MapPin size={13} className="shrink-0" />
-                <span className="truncate">{item.lokasi}</span>
-              </a>
-            ) : linkLokasi ? (
-              <a
-                href={item.lokasi}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`flex items-center gap-1 font-medium ${active ? 'text-white underline' : 'text-upload'}`}
-              >
-                <MapPin size={13} className="shrink-0" /> Buka di Maps
-              </a>
-            ) : (
-              <p className="flex items-center gap-1">
-                <MapPin size={13} className="shrink-0" />
-                <span className="truncate">{item.lokasi}</span>
-              </p>
-            ))}
-          {item.budget > 0 && <p className="truncate">{rupiah(item.budget)}</p>}
-        </div>
+      {(textLokasi || item.budget > 0) && (
+        <p className={`mt-1 flex items-center gap-1 text-xs ${active ? 'text-white/90' : 'text-muted'}`}>
+          {textLokasi && (
+            <>
+              <MapPin size={13} className="shrink-0" />
+              <span className="truncate">{item.lokasi}</span>
+            </>
+          )}
+          {textLokasi && item.budget > 0 && <span aria-hidden="true">·</span>}
+          {item.budget > 0 && <span className="shrink-0">{rupiah(item.budget)}</span>}
+        </p>
+      )}
 
-        <div className="flex shrink-0 gap-1.5">
+      <div className="mt-1.5 flex items-center gap-1.5">
+        {mapsLink && (
+          <a
+            href={mapsLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-xs font-medium ${
+              active ? 'bg-white/20 text-white' : 'bg-upload/10 text-upload'
+            }`}
+          >
+            <ExternalLink size={14} /> Buka di Maps
+          </a>
+        )}
+
+        <div className="ml-auto flex shrink-0 gap-1.5">
           <UploadButton kind="kegiatan" ownerId={item.id} light={active} allowPdf />
           {mode === 'rencana' && (
             <>
