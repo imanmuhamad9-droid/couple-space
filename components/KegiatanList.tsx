@@ -58,6 +58,12 @@ function DoneBody({
       <p className="text-muted">
         &quot;{item.kegiatan}&quot; akan pindah ke Histori dan tidak bisa diedit lagi.
       </p>
+      {item.fotos.length > 0 && (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          Lampiran Rencana ({item.fotos.length} file) akan dihapus. Histori mulai kosong; kamu bisa mengunggah lagi dari
+          Histori.
+        </p>
+      )}
       {linked ? (
         <p className="rounded-xl bg-done/10 px-3 py-2 text-sm text-done">
           Kunjungan ke <strong>{linked.nama}</strong> akan bertambah 1.
@@ -177,7 +183,7 @@ export function KegiatanList({
 
   const tempatById = useMemo(() => new Map(tempat.map((t) => [t.id, t])), [tempat])
 
-  const viewerFotos = viewer ? (merged.find((k) => k.id === viewer.ownerId)?.fotos ?? []) : []
+  const viewerFotos = viewer ? (merged.find((k) => k.id === viewer.ownerId)?.fotos ?? []).filter((f) => !f.pdf) : []
   const title = mode === 'rencana' ? 'Rencana' : 'Histori'
 
   function openForm(k: Kegiatan | null) {

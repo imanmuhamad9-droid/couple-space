@@ -38,19 +38,23 @@ export const ME_KEY = 'catatan-kegiatan-me'
 export const FOTO_BUCKET = 'foto'
 export const FOTO_MAX_BYTES = 10 * 1024 * 1024
 export const FOTO_URL_TTL = 60 * 60
+// Upload lewat server di Vercel dibatasi ±4,5 MB per permintaan, jadi PDF maksimal 4 MB.
+export const PDF_MAX_BYTES = 4 * 1024 * 1024
 
 export const KETERANGAN = {
   rencana: [
     'Tahan kartu sebentar lalu geser untuk mengubah urutan.',
     'Geser ke hari lain untuk memindahkan kegiatan ke tanggal tersebut.',
     'Jam akan menyesuaikan otomatis, jadi tidak ada yang bertabrakan.',
-    'Ceklis hijau: tandai terlaksana, kegiatan pindah ke Histori. Ikon biru: upload foto.',
+    'Ikon biru: upload foto atau PDF (PDF maks 4 MB). Tekan PDF untuk membukanya langsung.',
+    'Ceklis hijau: tandai terlaksana, kegiatan pindah ke Histori. Lampiran Rencana ikut dihapus, Histori mulai kosong.',
     'Pindah urutan dimatikan saat kamu sedang mencari.',
   ],
   histori: [
     'Kegiatan yang sudah terlaksana urut sesuai tanggal.',
     'Kegiatan di Histori tidak bisa diedit atau dihapus.',
-    'Foto tetap bisa diunggah. Tekan thumbnail untuk melihat foto dalam ukuran besar.',
+    'Lampiran dari Rencana tidak ikut pindah. Foto atau PDF yang kamu unggah di sini yang tersimpan.',
+    'Tekan thumbnail untuk melihat foto dalam ukuran besar, tekan PDF untuk membukanya.',
   ],
   database: [
     'Daftar tempat favoritmu, bisa difilter berdasarkan kategori dan kota.',

@@ -4,7 +4,7 @@ import { hhmm } from './format'
 import { admin } from './supabase-admin'
 import type { FotoItem, Kegiatan, Status, Tempat, TempatRingkas } from './types'
 
-type FotoRow = { id: string; storage_path: string; created_at: string }
+type FotoRow = { id: string; storage_path: string; created_at: string; mime_type?: string; nama_file?: string | null }
 
 /** Satu panggilan batch untuk semua signed URL (berlaku 1 jam), hanya untuk foto yang tampil. */
 async function signedUrls(rows: FotoRow[]): Promise<Map<string, string>> {
@@ -26,7 +26,7 @@ function toItems(rows: FotoRow[] | null, urls: Map<string, string>): FotoItem[] 
     .sort((a, b) => a.created_at.localeCompare(b.created_at))
     .flatMap((r) => {
       const url = urls.get(r.storage_path)
-      return url ? [{ id: r.id, url }] : []
+      return url ? [{ id: r.id, url, pdf: r.mime_type === 'application/pdf', nama: r.nama_file ?? null }] : []
     })
 }
 
@@ -34,7 +34,7 @@ export async function listKegiatan(status: Status): Promise<Kegiatan[]> {
   // Foto ikut dalam satu query (relasi foto.kegiatan_id), jadi tidak ada query kedua.
   const res = await admin()
     .from('kegiatan')
-    .select('*, foto(id, storage_path, created_at)')
+    .select('*, foto(*)')
     .eq('status', status)
     .order('tanggal', { ascending: true })
     .order('jam', { ascending: true })
@@ -58,7 +58,7 @@ export async function listKegiatan(status: Status): Promise<Kegiatan[]> {
 export async function listTempat(): Promise<Tempat[]> {
   const res = await admin()
     .from('tempat')
-    .select('*, foto(id, storage_path, created_at)')
+    .select('*, foto(*)')
     .order('nama', { ascending: true })
   if (res.error) throw new Error(res.error.message)
 

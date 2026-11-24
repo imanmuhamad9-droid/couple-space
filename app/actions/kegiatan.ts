@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { must, run } from '@/lib/action'
-import { removeOwnerFiles } from '@/lib/storage'
+import { clearOwnerFiles, removeOwnerFiles } from '@/lib/storage'
 import { admin } from '@/lib/supabase-admin'
 
 const Id = z.uuid()
@@ -90,6 +90,14 @@ export async function markTerlaksana(idRaw: string, tempatIdRaw?: string | null)
         .eq('status', 'rencana'),
     )
 
+    // Lampiran Rencana tidak ikut pindah ke Histori: hapus file dan barisnya.
+    let lampiranGagal = false
+    try {
+      await clearOwnerFiles('kegiatan_id', id)
+    } catch {
+      lampiranGagal = true
+    }
+
     // Gagal menghitung kunjungan tidak boleh membatalkan status terlaksana.
     if (tempatId) {
       try {
@@ -102,6 +110,7 @@ export async function markTerlaksana(idRaw: string, tempatIdRaw?: string | null)
       }
     }
     refresh()
+    if (lampiranGagal) throw new Error('Sudah terlaksana, tetapi lampiran Rencana gagal dihapus. Hapus manual dari Histori.')
   })
 }
 

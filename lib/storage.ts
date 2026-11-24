@@ -10,3 +10,10 @@ export async function removeOwnerFiles(column: 'kegiatan_id' | 'tempat_id', owne
   const res = await admin().storage.from(FOTO_BUCKET).remove(paths)
   if (res.error) throw new Error(res.error.message)
 }
+
+/** Hapus semua lampiran satu kegiatan/tempat (file di Storage dan barisnya), tanpa menghapus pemiliknya. */
+export async function clearOwnerFiles(column: 'kegiatan_id' | 'tempat_id', ownerId: string) {
+  await removeOwnerFiles(column, ownerId)
+  const res = await admin().from('foto').delete().eq(column, ownerId)
+  if (res.error) throw new Error(res.error.message)
+}

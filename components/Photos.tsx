@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Download, ImagePlus, Trash2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, FileText, ImagePlus, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { deleteFoto } from '@/app/actions/foto'
 import { useUpload } from '@/hooks/useUpload'
@@ -8,11 +8,12 @@ import type { FotoItem } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { ConfirmSheet } from './Sheet'
 
-/** Barisan thumbnail (maks 4 + "+N"). */
+/** Barisan thumbnail foto (maks 4 + "+N"). PDF tidak dihitung di sini; lihat PdfList. `onOpen` memakai indeks di antara foto saja. */
 export function Thumbs({ fotos, max = 4, onOpen }: { fotos: FotoItem[]; max?: number; onOpen: (i: number) => void }) {
-  if (fotos.length === 0) return null
-  const shown = fotos.slice(0, max)
-  const extra = fotos.length - shown.length
+  const images = fotos.filter((f) => !f.pdf)
+  if (images.length === 0) return null
+  const shown = images.slice(0, max)
+  const extra = images.length - shown.length
   return (
     <div className="mt-1.5 flex gap-1.5">
       {shown.map((f, i) => (
@@ -36,16 +37,61 @@ export function Thumbs({ fotos, max = 4, onOpen }: { fotos: FotoItem[]; max?: nu
   )
 }
 
-/** Tombol ikon biru: pilih foto dari galeri, kecilkan, lalu upload. */
+/** Lampiran PDF: ketuk untuk membuka langsung di penampil PDF browser (tanpa mengunduh), tombol sampah untuk menghapus. */
+export function PdfList({ fotos }: { fotos: FotoItem[] }) {
+  const { track } = useFeedback()
+  const [del, setDel] = useState<FotoItem | null>(null)
+  const pdfs = fotos.filter((f) => f.pdf)
+  if (pdfs.length === 0) return null
+  return (
+    <div className="mt-1.5 space-y-1">
+      {pdfs.map((f) => (
+        <div key={f.id} className="flex items-center gap-1 rounded-lg bg-gray-100 py-0.5 pl-2 pr-0.5 text-ink">
+          <a
+            href={f.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-xs font-medium"
+          >
+            <FileText size={15} className="shrink-0 text-del" />
+            <span className="truncate">{f.nama ?? 'Dokumen PDF'}</span>
+          </a>
+          <button
+            type="button"
+            onClick={() => setDel(f)}
+            aria-label={`Hapus ${f.nama ?? 'PDF'}`}
+            className="grid size-8 shrink-0 place-items-center rounded-full text-del active:bg-white"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ))}
+      <ConfirmSheet
+        open={del !== null}
+        title="Hapus PDF?"
+        message={`"${del?.nama ?? 'Dokumen PDF'}" akan dihapus permanen.`}
+        confirmLabel="Hapus"
+        danger
+        onClose={() => setDel(null)}
+        onConfirm={() => del && track(deleteFoto(del.id), 'PDF dihapus', 'Menghapus file...')}
+      />
+    </div>
+  )
+}
+
+/** Tombol ikon biru: pilih foto (dikecilkan dulu) atau PDF, lalu upload. */
 export function UploadButton({
   kind,
   ownerId,
   light = false,
+  allowPdf = false,
 }: {
   kind: 'kegiatan' | 'tempat'
   ownerId: string
   /** Gaya terang untuk kartu bergradien. */
   light?: boolean
+  /** Izinkan PDF (hanya untuk kegiatan). */
+  allowPdf?: boolean
 }) {
   const input = useRef<HTMLInputElement>(null)
   const upload = useUpload()
@@ -53,7 +99,7 @@ export function UploadButton({
     <>
       <button
         type="button"
-        aria-label="Upload foto"
+        aria-label={allowPdf ? 'Upload foto atau PDF' : 'Upload foto'}
         onClick={() => input.current?.click()}
         className={`grid size-9 place-items-center rounded-full text-white active:scale-95 ${light ? 'bg-white/25' : 'bg-upload'}`}
       >
@@ -62,7 +108,7 @@ export function UploadButton({
       <input
         ref={input}
         type="file"
-        accept="image/*"
+        accept={allowPdf ? 'image/*,application/pdf' : 'image/*'}
         multiple
         hidden
         onChange={async (e) => {

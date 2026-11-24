@@ -1,6 +1,7 @@
 export type Status = 'rencana' | 'terlaksana'
 
-export type FotoItem = { id: string; url: string }
+/** Lampiran: foto atau PDF (tabel `foto` menampung keduanya). */
+export type FotoItem = { id: string; url: string; pdf: boolean; nama: string | null }
 
 export type Kegiatan = {
   id: string

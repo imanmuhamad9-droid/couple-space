@@ -5,7 +5,7 @@ import type { CSSProperties, HTMLAttributes } from 'react'
 import { isHttpLink } from '@/lib/geo'
 import { rupiah } from '@/lib/format'
 import type { Kegiatan } from '@/lib/types'
-import { Thumbs, UploadButton } from './Photos'
+import { PdfList, Thumbs, UploadButton } from './Photos'
 
 type Props = {
   item: Kegiatan
@@ -112,7 +112,7 @@ export function KegiatanCard({
         </div>
 
         <div className="flex shrink-0 gap-1.5">
-          <UploadButton kind="kegiatan" ownerId={item.id} light={active} />
+          <UploadButton kind="kegiatan" ownerId={item.id} light={active} allowPdf />
           {mode === 'rencana' && (
             <>
               <button
@@ -145,6 +145,7 @@ export function KegiatanCard({
       </div>
 
       <Thumbs fotos={item.fotos} onOpen={onOpenPhoto} />
+      <PdfList fotos={item.fotos} />
     </article>
   )
 }
