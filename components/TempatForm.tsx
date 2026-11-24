@@ -88,7 +88,7 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
         <button
           type="button"
           onClick={() => fileInput.current?.click()}
-          className="h-12 w-full rounded-xl border border-dashed border-line text-sm font-medium text-muted"
+          className="h-11 w-full rounded-xl border border-dashed border-line text-sm font-medium text-muted"
         >
           {files.length ? `${files.length} foto dipilih` : 'Pilih foto (opsional)'}
         </button>

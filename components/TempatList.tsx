@@ -150,7 +150,7 @@ export function TempatList({ items }: { items: Tempat[] }) {
         confirmLabel="Hapus"
         danger
         onClose={() => setDeleting(null)}
-        onConfirm={() => deleting && track(deleteTempat(deleting.id), 'Dihapus')}
+        onConfirm={() => deleting && track(deleteTempat(deleting.id), 'Dihapus', 'Menghapus...')}
       />
 
       <Sheet open={manualOpen} title="Isi lokasi kamu" onClose={() => setManualOpen(false)}>

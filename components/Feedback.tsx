@@ -3,10 +3,17 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Result } from '@/lib/types'
 
+export type Progress = { label: string; pct: number }
+
 type Ctx = {
   toast: (msg: string) => void
-  /** Jalankan Server Action: tampilkan "Menyimpan...", toast sukses/gagal, kembalikan hasilnya. */
-  track: <T>(p: Promise<Result<T>>, okMsg?: string) => Promise<Result<T>>
+  /**
+   * Jalankan Server Action: tampilkan indikator proses, toast sukses/gagal, kembalikan hasilnya.
+   * `label` = teks indikator ("Menyimpan...", "Menghapus...").
+   */
+  track: <T>(p: Promise<Result<T>>, okMsg?: string, label?: string) => Promise<Result<T>>
+  /** Indikator berpersen (mis. upload banyak foto). `null` untuk menutup. */
+  setProgress: (p: Progress | null) => void
 }
 
 const FeedbackCtx = createContext<Ctx | null>(null)
@@ -20,6 +27,8 @@ export function useFeedback() {
 export function FeedbackProvider({ children }: { children: ReactNode }) {
   const [msg, setMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(0)
+  const [busyLabel, setBusyLabel] = useState('Menyimpan...')
+  const [progress, setProgress] = useState<Progress | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const toast = useCallback((m: string) => {
@@ -29,7 +38,8 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const track = useCallback(
-    async <T,>(p: Promise<Result<T>>, okMsg?: string) => {
+    async <T,>(p: Promise<Result<T>>, okMsg?: string, label = 'Menyimpan...') => {
+      setBusyLabel(label)
       setBusy((n) => n + 1)
       try {
         const r = await p
@@ -46,17 +56,34 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     [toast],
   )
 
-  const value = useMemo(() => ({ toast, track }), [toast, track])
+  const value = useMemo(() => ({ toast, track, setProgress }), [toast, track])
+  const active = progress !== null || busy > 0
 
   return (
     <FeedbackCtx.Provider value={value}>
       {children}
-      {busy > 0 && (
+      {active && (
         <div
           role="status"
-          className="pointer-events-none fixed inset-x-0 top-0 z-[70] flex justify-center pt-[env(safe-area-inset-top)]"
+          aria-live="polite"
+          className="pointer-events-none fixed inset-x-0 top-0 z-[70] flex justify-center px-4 pt-[calc(8px+env(safe-area-inset-top))]"
         >
-          <span className="mt-1 rounded-full bg-ink px-3 py-1 text-xs font-medium text-white shadow">Menyimpan...</span>
+          <div className="w-[min(320px,100%)] rounded-2xl bg-ink px-4 py-3 text-white shadow-lg">
+            <div className="flex items-center justify-between text-sm font-medium">
+              <span>{progress?.label ?? busyLabel}</span>
+              {progress && <span className="tabular-nums">{Math.round(progress.pct)}%</span>}
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/20">
+              {progress ? (
+                <div
+                  className="h-full rounded-full bg-white transition-[width] duration-200"
+                  style={{ width: `${Math.max(4, Math.min(100, progress.pct))}%` }}
+                />
+              ) : (
+                <div className="progress-indeterminate h-full w-1/3 rounded-full bg-white" />
+              )}
+            </div>
+          </div>
         </div>
       )}
       {msg && (

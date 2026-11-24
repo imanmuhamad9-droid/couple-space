@@ -135,7 +135,7 @@ export function Chip({ active, onClick, children }: { active: boolean; onClick: 
 }
 
 export const inputCls =
-  'block h-12 w-full min-w-0 max-w-full appearance-none rounded-xl border border-line bg-white px-3 text-base outline-none focus:border-upload'
+  'block h-11 w-full min-w-0 max-w-full rounded-xl border border-line bg-white px-3 text-base outline-none focus:border-upload [&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-left'
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -151,7 +151,7 @@ export function SubmitButton({ busy, children }: { busy: boolean; children: Reac
     <button
       type="submit"
       disabled={busy}
-      className="h-12 w-full rounded-xl bg-upload font-semibold text-white disabled:opacity-60"
+      className="h-11 w-full rounded-xl bg-upload font-semibold text-white disabled:opacity-60"
     >
       {children}
     </button>

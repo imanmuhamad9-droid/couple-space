@@ -86,7 +86,7 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
         for (const c of changes) m.set(c.id, { tanggal: c.tanggal, jam: c.jam })
         return m
       })
-      const r = await track(reorderKegiatan(changes))
+      const r = await track(reorderKegiatan(changes), undefined, 'Menyimpan urutan...')
       if (!r.ok) setOver(new Map())
     },
   })
@@ -174,7 +174,7 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
         message={`"${confirm?.item.kegiatan ?? ''}" akan pindah ke Histori dan tidak bisa diedit lagi.`}
         confirmLabel="Ya, terlaksana"
         onClose={() => setConfirm(null)}
-        onConfirm={() => confirm && track(markTerlaksana(confirm.item.id), 'Pindah ke Histori')}
+        onConfirm={() => confirm && track(markTerlaksana(confirm.item.id), 'Pindah ke Histori', 'Memproses...')}
       />
       <ConfirmSheet
         open={confirm?.kind === 'delete'}
@@ -183,7 +183,7 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
         confirmLabel="Hapus"
         danger
         onClose={() => setConfirm(null)}
-        onConfirm={() => confirm && track(deleteKegiatan(confirm.item.id), 'Dihapus')}
+        onConfirm={() => confirm && track(deleteKegiatan(confirm.item.id), 'Dihapus', 'Menghapus...')}
       />
 
       {viewer && (

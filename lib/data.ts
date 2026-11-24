@@ -4,9 +4,9 @@ import { hhmm } from './format'
 import { admin } from './supabase-admin'
 import type { FotoItem, Kegiatan, Status, Tempat } from './types'
 
-type FotoRow = { id: string; kegiatan_id: string | null; tempat_id: string | null; storage_path: string }
+type FotoRow = { id: string; storage_path: string; created_at: string }
 
-/** Satu panggilan batch untuk semua signed URL (berlaku 1 jam). */
+/** Satu panggilan batch untuk semua signed URL (berlaku 1 jam), hanya untuk foto yang tampil. */
 async function signedUrls(rows: FotoRow[]): Promise<Map<string, string>> {
   const urls = new Map<string, string>()
   if (rows.length === 0) return urls
@@ -21,37 +21,28 @@ async function signedUrls(rows: FotoRow[]): Promise<Map<string, string>> {
   return urls
 }
 
-async function fotosByOwner(column: 'kegiatan_id' | 'tempat_id'): Promise<Map<string, FotoItem[]>> {
-  const { data, error } = await admin()
-    .from('foto')
-    .select('id, kegiatan_id, tempat_id, storage_path')
-    .not(column, 'is', null)
-    .order('created_at', { ascending: true })
-  if (error) throw new Error(error.message)
-  const rows = (data ?? []) as FotoRow[]
-  const urls = await signedUrls(rows)
-  const map = new Map<string, FotoItem[]>()
-  for (const r of rows) {
-    const url = urls.get(r.storage_path)
-    const owner = r[column]
-    if (!url || !owner) continue
-    map.set(owner, [...(map.get(owner) ?? []), { id: r.id, url }])
-  }
-  return map
+function toItems(rows: FotoRow[] | null, urls: Map<string, string>): FotoItem[] {
+  return [...(rows ?? [])]
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .flatMap((r) => {
+      const url = urls.get(r.storage_path)
+      return url ? [{ id: r.id, url }] : []
+    })
 }
 
 export async function listKegiatan(status: Status): Promise<Kegiatan[]> {
-  const [res, fotos] = await Promise.all([
-    admin()
-      .from('kegiatan')
-      .select('id, tanggal, jam, kegiatan, lokasi, budget, status')
-      .eq('status', status)
-      .order('tanggal', { ascending: true })
-      .order('jam', { ascending: true }),
-    fotosByOwner('kegiatan_id'),
-  ])
+  // Foto ikut dalam satu query (relasi foto.kegiatan_id), jadi tidak ada query kedua.
+  const res = await admin()
+    .from('kegiatan')
+    .select('id, tanggal, jam, kegiatan, lokasi, budget, status, foto(id, storage_path, created_at)')
+    .eq('status', status)
+    .order('tanggal', { ascending: true })
+    .order('jam', { ascending: true })
   if (res.error) throw new Error(res.error.message)
-  return (res.data ?? []).map((r) => ({
+
+  const rows = res.data ?? []
+  const urls = await signedUrls(rows.flatMap((r) => (r.foto ?? []) as FotoRow[]))
+  return rows.map((r) => ({
     id: r.id,
     tanggal: r.tanggal,
     jam: hhmm(r.jam) ?? '00:00',
@@ -59,20 +50,20 @@ export async function listKegiatan(status: Status): Promise<Kegiatan[]> {
     lokasi: r.lokasi,
     budget: r.budget,
     status: r.status as Status,
-    fotos: fotos.get(r.id) ?? [],
+    fotos: toItems(r.foto as FotoRow[], urls),
   }))
 }
 
 export async function listTempat(): Promise<Tempat[]> {
-  const [res, fotos] = await Promise.all([
-    admin()
-      .from('tempat')
-      .select('id, nama, kategori, kota, buka, tutup, link_maps, lat, lng')
-      .order('nama', { ascending: true }),
-    fotosByOwner('tempat_id'),
-  ])
+  const res = await admin()
+    .from('tempat')
+    .select('id, nama, kategori, kota, buka, tutup, link_maps, lat, lng, foto(id, storage_path, created_at)')
+    .order('nama', { ascending: true })
   if (res.error) throw new Error(res.error.message)
-  return (res.data ?? []).map((r) => ({
+
+  const rows = res.data ?? []
+  const urls = await signedUrls(rows.flatMap((r) => (r.foto ?? []) as FotoRow[]))
+  return rows.map((r) => ({
     id: r.id,
     nama: r.nama,
     kategori: r.kategori,
@@ -82,6 +73,6 @@ export async function listTempat(): Promise<Tempat[]> {
     linkMaps: r.link_maps,
     lat: r.lat,
     lng: r.lng,
-    fotos: fotos.get(r.id) ?? [],
+    fotos: toItems(r.foto as FotoRow[], urls),
   }))
 }

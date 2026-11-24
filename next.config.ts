@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   experimental: {
     // Foto sudah dikecilkan di browser (<1 MB), jadi 8 MB lebih dari cukup.
     serverActions: { bodySizeLimit: '8mb' },
+    // Halaman yang baru dibuka dipakai ulang 30 detik saat pindah menu. Simpan/hapus/refresh
+    // otomatis membuang cache ini, jadi data tidak basi.
+    staleTimes: { dynamic: 30 },
   },
   async headers() {
     return [

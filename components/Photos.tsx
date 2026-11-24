@@ -186,7 +186,7 @@ export function PhotoViewer({
         danger
         onClose={() => setConfirm(false)}
         onConfirm={async () => {
-          await track(deleteFoto(current.id), 'Foto dihapus')
+          await track(deleteFoto(current.id), 'Foto dihapus', 'Menghapus foto...')
         }}
       />
     </div>
