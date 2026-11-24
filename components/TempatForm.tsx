@@ -39,7 +39,8 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
       }),
     )
     if (r.ok) {
-      if (linkMaps && !r.data.coordsFound) toast('Tersimpan, tapi koordinat tidak terbaca dari link')
+      if (r.data.via === 'nama') toast('Tersimpan. Koordinat dicari dari nama tempat, jadi hanya perkiraan.')
+      else if (r.data.via === null) toast(`Tersimpan, tapi koordinat tidak terbaca (${r.data.note}).`)
       else toast('Tersimpan')
       if (files.length) await upload('tempat', r.data.id, files)
       onDone()
