@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { deleteKegiatan, markTerlaksana, reorderKegiatan } from '@/app/actions/kegiatan'
 import { useDragReorder } from '@/hooks/useDragReorder'
-import { HARI_PER_HALAMAN } from '@/lib/constants'
+import { ITEM_PER_HALAMAN } from '@/lib/constants'
 import { formatTanggal, formatTanggalPanjang, formatTanggalSingkat, rupiah } from '@/lib/format'
 import { moveItem } from '@/lib/schedule'
 import type { Kegiatan } from '@/lib/types'
@@ -66,19 +66,23 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
     [merged, q],
   )
 
-  const days = useMemo(() => [...new Set(filtered.map((k) => k.tanggal))], [filtered])
-  const pages = Math.max(1, Math.ceil(days.length / HARI_PER_HALAMAN))
+  // 20 kartu per halaman; satu hari bisa terbelah di batas halaman.
+  const pages = Math.max(1, Math.ceil(filtered.length / ITEM_PER_HALAMAN))
   const cur = Math.min(page, pages - 1)
-  const visibleDays = days.slice(cur * HARI_PER_HALAMAN, (cur + 1) * HARI_PER_HALAMAN)
+  const pageItems = filtered.slice(cur * ITEM_PER_HALAMAN, (cur + 1) * ITEM_PER_HALAMAN)
+  const visibleDays = [...new Set(pageItems.map((k) => k.tanggal))]
 
   const { dragId, dy, target, bind } = useDragReorder({
     enabled: mode === 'rencana' && words.length === 0,
     onDrop: async (id, day, idx) => {
+      // idx dihitung di antara kartu yang tampil; tambahkan kartu hari itu yang ada di halaman sebelumnya.
+      const firstShown = pageItems.find((k) => k.tanggal === day)
+      const offset = firstShown ? merged.filter((k) => k.tanggal === day).findIndex((k) => k.id === firstShown.id) : 0
       const changes = moveItem(
         merged.map((k) => ({ id: k.id, tanggal: k.tanggal, jam: k.jam, done: false })),
         id,
         day,
-        idx,
+        idx + offset,
       )
       if (changes.length === 0) return
       setOver((prev) => {
@@ -111,7 +115,7 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
         placeholder="Cari kegiatan, lokasi, tanggal..."
       />
 
-      {days.length === 0 ? (
+      {filtered.length === 0 ? (
         <Empty>
           {items.length === 0
             ? mode === 'rencana'
@@ -121,18 +125,18 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
         </Empty>
       ) : (
         visibleDays.map((day) => {
-          const dayItems = filtered.filter((k) => k.tanggal === day)
+          const dayItems = pageItems.filter((k) => k.tanggal === day)
           const t = target?.day === day ? target : null
           let k = 0
-          const bar = <div key={`bar-${k}`} className="my-1 h-1 rounded-full bg-upload" />
+          const bar = <div className="my-0.5 h-1 rounded-full bg-upload" />
           return (
             <section
               key={day}
               data-day={day}
-              className={`mx-4 mb-5 rounded-2xl p-1.5 transition-colors ${t ? 'bg-upload/10' : ''}`}
+              className={`mx-3 mb-3 rounded-xl p-1 transition-colors ${t ? 'bg-upload/10' : ''}`}
             >
-              <h2 className="mb-2 px-1 text-sm font-semibold text-muted">{formatTanggal(day)}</h2>
-              <div className="space-y-3">
+              <h2 className="mb-1 px-1 text-xs font-semibold text-muted">{formatTanggal(day)}</h2>
+              <div className="space-y-1.5">
                 {dayItems.map((item) => {
                   const isDragged = item.id === dragId
                   const before = !isDragged && t?.idx === k ? bar : null

@@ -28,8 +28,8 @@ export const KOTA = [
   'Surabaya',
 ] as const
 
-export const HARI_PER_HALAMAN = 3
-export const TEMPAT_PER_HALAMAN = 8
+export const ITEM_PER_HALAMAN = 20 // kartu per halaman di Rencana dan Histori
+export const TEMPAT_PER_HALAMAN = 20
 export const ME_KEY = 'catatan-kegiatan-me'
 
 export const FOTO_BUCKET = 'foto'

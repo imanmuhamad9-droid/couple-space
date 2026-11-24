@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, MapPin, Pencil, Trash2, Wallet } from 'lucide-react'
+import { Check, MapPin, Pencil, Trash2 } from 'lucide-react'
 import type { CSSProperties, HTMLAttributes } from 'react'
 import { isHttpLink } from '@/lib/geo'
 import { rupiah } from '@/lib/format'
@@ -19,87 +19,80 @@ type Props = {
   onOpenPhoto: (index: number) => void
 }
 
+const icon = 'grid size-9 place-items-center rounded-full active:scale-95'
+
+/** Kartu ringkas: baris 1 = jam + judul; baris 2 = lokasi/budget di kiri, tombol ikon di kanan. */
 export function KegiatanCard({ item, mode, dragging, style, dragProps, onDone, onEdit, onDelete, onOpenPhoto }: Props) {
   const done = item.status === 'terlaksana'
+  const linkLokasi = isHttpLink(item.lokasi)
   return (
     <article
       data-card-id={item.id}
       style={style}
       {...dragProps}
-      className={`rounded-[14px] bg-white p-4 shadow-sm transition-shadow ${
+      className={`rounded-xl bg-white px-2.5 py-2 shadow-sm transition-shadow ${
         mode === 'rencana' ? 'select-none [-webkit-touch-callout:none]' : ''
       } ${dragging ? 'relative z-20 scale-[1.02] shadow-2xl' : ''}`}
     >
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 shrink-0 rounded-lg bg-gray-100 px-2 py-1 text-sm font-semibold tabular-nums">
+      <div className="flex items-start gap-2">
+        <span className="mt-px shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-semibold tabular-nums">
           {item.jam}
         </span>
-        <div className="min-w-0 flex-1">
-          <h3 className={`break-words font-semibold leading-snug ${done ? 'text-muted line-through' : ''}`}>
-            {item.kegiatan}
-          </h3>
-          {done && (
-            <span className="mt-1 inline-block rounded-full bg-done/10 px-2 py-0.5 text-xs font-semibold text-done">
-              Terlaksana
-            </span>
-          )}
+        <h3 className={`min-w-0 flex-1 break-words text-[15px] font-semibold leading-snug ${done ? 'text-muted line-through' : ''}`}>
+          {item.kegiatan}
+        </h3>
+        {done && (
+          <span className="shrink-0 rounded-full bg-done/10 px-2 py-0.5 text-[11px] font-semibold text-done">
+            Terlaksana
+          </span>
+        )}
+      </div>
+
+      <div className="mt-1 flex items-center gap-2">
+        <div className="min-w-0 flex-1 space-y-0.5 text-xs text-muted">
           {item.lokasi &&
-            (isHttpLink(item.lokasi) ? (
+            (linkLokasi ? (
               <a
                 href={item.lokasi}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-upload"
+                className="flex items-center gap-1 font-medium text-upload"
               >
-                <MapPin size={15} /> Buka di Maps
+                <MapPin size={13} className="shrink-0" /> Buka di Maps
               </a>
             ) : (
-              <p className="mt-1.5 flex items-start gap-1.5 text-sm text-muted">
-                <MapPin size={15} className="mt-0.5 shrink-0" />
-                <span className="break-words">{item.lokasi}</span>
+              <p className="flex items-center gap-1">
+                <MapPin size={13} className="shrink-0" />
+                <span className="truncate">{item.lokasi}</span>
               </p>
             ))}
-          {item.budget > 0 && (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
-              <Wallet size={15} /> {rupiah(item.budget)}
-            </p>
+          {item.budget > 0 && <p className="truncate">{rupiah(item.budget)}</p>}
+        </div>
+
+        <div className="flex shrink-0 gap-1.5">
+          <UploadButton kind="kegiatan" ownerId={item.id} />
+          {mode === 'rencana' && (
+            <>
+              <button
+                type="button"
+                aria-label="Tandai terlaksana"
+                onClick={onDone}
+                className={`${icon} border-2 border-done text-done`}
+              >
+                <Check size={16} strokeWidth={3} />
+              </button>
+              <button type="button" aria-label="Edit" onClick={onEdit} className={`${icon} bg-edit/10 text-edit`}>
+                <Pencil size={15} />
+              </button>
+              <button type="button" aria-label="Hapus" onClick={onDelete} className={`${icon} bg-del/10 text-del`}>
+                <Trash2 size={15} />
+              </button>
+            </>
           )}
         </div>
       </div>
 
       <Thumbs fotos={item.fotos} onOpen={onOpenPhoto} />
-
-      <div className="mt-3 flex justify-end gap-2">
-        <UploadButton kind="kegiatan" ownerId={item.id} />
-        {mode === 'rencana' && (
-          <>
-            <button
-              type="button"
-              aria-label="Tandai terlaksana"
-              onClick={onDone}
-              className="grid size-10 place-items-center rounded-full border-2 border-done text-done active:scale-95"
-            >
-              <Check size={19} strokeWidth={3} />
-            </button>
-            <button
-              type="button"
-              aria-label="Edit"
-              onClick={onEdit}
-              className="grid size-10 place-items-center rounded-full bg-edit/10 text-edit active:scale-95"
-            >
-              <Pencil size={18} />
-            </button>
-            <button
-              type="button"
-              aria-label="Hapus"
-              onClick={onDelete}
-              className="grid size-10 place-items-center rounded-full bg-del/10 text-del active:scale-95"
-            >
-              <Trash2 size={18} />
-            </button>
-          </>
-        )}
-      </div>
     </article>
   )
 }

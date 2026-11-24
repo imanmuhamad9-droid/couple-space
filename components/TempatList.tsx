@@ -122,7 +122,7 @@ export function TempatList({ items }: { items: Tempat[] }) {
       {visible.length === 0 ? (
         <Empty>{items.length === 0 ? 'Belum ada tempat. Tekan + untuk menambah.' : 'Tidak ada yang cocok.'}</Empty>
       ) : (
-        <div className="space-y-3 px-4">
+        <div className="space-y-1.5 px-3">
           {visible.map(({ t, km }) => (
             <TempatCard
               key={t.id}

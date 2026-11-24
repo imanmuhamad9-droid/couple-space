@@ -14,19 +14,19 @@ export function Thumbs({ fotos, max = 4, onOpen }: { fotos: FotoItem[]; max?: nu
   const shown = fotos.slice(0, max)
   const extra = fotos.length - shown.length
   return (
-    <div className="mt-3 flex gap-2">
+    <div className="mt-1.5 flex gap-1.5">
       {shown.map((f, i) => (
         <button
           key={f.id}
           type="button"
           onClick={() => onOpen(i)}
           aria-label={`Buka foto ${i + 1}`}
-          className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-gray-200"
+          className="relative size-11 shrink-0 overflow-hidden rounded-md bg-gray-200"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={f.url} alt="" loading="lazy" className="size-full object-cover" />
           {extra > 0 && i === shown.length - 1 && (
-            <span className="absolute inset-0 grid place-items-center bg-black/55 text-sm font-semibold text-white">
+            <span className="absolute inset-0 grid place-items-center bg-black/55 text-xs font-semibold text-white">
               +{extra}
             </span>
           )}
@@ -46,9 +46,9 @@ export function UploadButton({ kind, ownerId }: { kind: 'kegiatan' | 'tempat'; o
         type="button"
         aria-label="Upload foto"
         onClick={() => input.current?.click()}
-        className="grid size-10 place-items-center rounded-full bg-upload text-white active:scale-95"
+        className="grid size-9 place-items-center rounded-full bg-upload text-white active:scale-95"
       >
-        <ImagePlus size={19} />
+        <ImagePlus size={16} />
       </button>
       <input
         ref={input}
