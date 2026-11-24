@@ -30,6 +30,18 @@ function toItems(rows: FotoRow[] | null, urls: Map<string, string>): FotoItem[] 
     })
 }
 
+/** Jumlah kunjungan per tempat = jumlah kegiatan terlaksana yang terhubung ke tempat itu. */
+async function kunjunganPerTempat(): Promise<Map<string, number>> {
+  const counts = new Map<string, number>()
+  const res = await admin().from('kegiatan').select('tempat_id').eq('status', 'terlaksana').not('tempat_id', 'is', null)
+  if (res.error) return counts // kolom tempat_id belum ada (migrasi 0003 belum dijalankan)
+  for (const r of res.data ?? []) {
+    const id = r.tempat_id as string
+    counts.set(id, (counts.get(id) ?? 0) + 1)
+  }
+  return counts
+}
+
 export async function listKegiatan(status: Status): Promise<Kegiatan[]> {
   // Foto ikut dalam satu query (relasi foto.kegiatan_id), jadi tidak ada query kedua.
   const res = await admin()
@@ -56,10 +68,10 @@ export async function listKegiatan(status: Status): Promise<Kegiatan[]> {
 }
 
 export async function listTempat(): Promise<Tempat[]> {
-  const res = await admin()
-    .from('tempat')
-    .select('*, foto(*)')
-    .order('nama', { ascending: true })
+  const [res, kunjungan] = await Promise.all([
+    admin().from('tempat').select('*, foto(*)').order('nama', { ascending: true }),
+    kunjunganPerTempat(),
+  ])
   if (res.error) throw new Error(res.error.message)
 
   const rows = res.data ?? []
@@ -74,7 +86,7 @@ export async function listTempat(): Promise<Tempat[]> {
     linkMaps: r.link_maps,
     lat: r.lat,
     lng: r.lng,
-    kunjungan: (r.kunjungan as number | undefined) ?? 0,
+    kunjungan: kunjungan.get(r.id) ?? 0,
     createdAt: r.created_at as string,
     fotos: toItems(r.foto as FotoRow[], urls),
   }))
@@ -82,7 +94,10 @@ export async function listTempat(): Promise<Tempat[]> {
 
 /** Daftar tempat tanpa foto: ringan, untuk rekomendasi di form rencana dan tautan Maps di kartu. */
 export async function listTempatRingkas(): Promise<TempatRingkas[]> {
-  const res = await admin().from('tempat').select('*').order('nama', { ascending: true })
+  const [res, kunjungan] = await Promise.all([
+    admin().from('tempat').select('*').order('nama', { ascending: true }),
+    kunjunganPerTempat(),
+  ])
   if (res.error) throw new Error(res.error.message)
   return (res.data ?? []).map((r) => ({
     id: r.id,
@@ -92,6 +107,6 @@ export async function listTempatRingkas(): Promise<TempatRingkas[]> {
     linkMaps: r.link_maps,
     lat: r.lat,
     lng: r.lng,
-    kunjungan: (r.kunjungan as number | undefined) ?? 0,
+    kunjungan: kunjungan.get(r.id) ?? 0,
   }))
 }

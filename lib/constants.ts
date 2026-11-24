@@ -60,6 +60,7 @@ export const KETERANGAN = {
     'Daftar tempat favoritmu, bisa difilter berdasarkan kategori dan kota.',
     'Tekan tombol lokasi untuk menghitung jarak tiap tempat dari posisimu.',
     'Tekan "Buka di Maps" untuk langsung membuka lokasi di Google Maps.',
+    'Jumlah kunjungan dihitung otomatis dari kegiatan terlaksana di Histori yang tempatnya kamu pilih dari rekomendasi.',
     'Tekan foto untuk melihat semua fotonya dan menggeser ke samping.',
   ],
 } as const

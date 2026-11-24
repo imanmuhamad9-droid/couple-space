@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Download, FileText, ImagePlus, Trash2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, FileText, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { deleteFoto } from '@/app/actions/foto'
 import { useUpload } from '@/hooks/useUpload'
@@ -79,6 +79,28 @@ export function PdfList({ fotos }: { fotos: FotoItem[] }) {
   )
 }
 
+/** Ikon folder biru dengan panah unggah (dua nada biru, badan terang). */
+function UploadFolderIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      fill="none"
+      stroke="#0a4aa6"
+      strokeWidth="2.2"
+      strokeLinejoin="round"
+      strokeLinecap="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M5 13a3 3 0 0 1 3-3h10.5l4 3.5H42a3 3 0 0 1 3 3V18H5v-5Z" fill="#4c8ff5" />
+      <rect x="3" y="15.5" width="42" height="27" rx="3.5" fill="#f4f5f7" />
+      <circle cx="24" cy="28.5" r="9" fill="#4c8ff5" />
+      <path d="M24 22.5 18.5 28.5h3.3V34h4.4v-5.5h3.3L24 22.5Z" fill="#f4f5f7" />
+      <path d="M8 39h6.5M18 39h.1" />
+    </svg>
+  )
+}
+
 /** Tombol ikon biru: pilih foto (dikecilkan dulu) atau PDF, lalu upload. */
 export function UploadButton({
   kind,
@@ -101,9 +123,9 @@ export function UploadButton({
         type="button"
         aria-label={allowPdf ? 'Upload foto atau PDF' : 'Upload foto'}
         onClick={() => input.current?.click()}
-        className={`grid size-9 place-items-center rounded-full text-white active:scale-95 ${light ? 'bg-white/25' : 'bg-upload'}`}
+        className={`grid size-9 place-items-center rounded-lg active:scale-95 ${light ? 'bg-white/90' : ''}`}
       >
-        <ImagePlus size={16} />
+        <UploadFolderIcon className="size-8" />
       </button>
       <input
         ref={input}

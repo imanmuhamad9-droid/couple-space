@@ -13,7 +13,6 @@ import { useFeedback } from './Feedback'
 import { KegiatanCard } from './KegiatanCard'
 import { KegiatanForm } from './KegiatanForm'
 import { PhotoViewer } from './Photos'
-import { PlaceSuggest } from './PlaceSuggest'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { Empty, Fab, PageHeader, Pagination, SearchBox } from './ui'
 
@@ -35,71 +34,6 @@ function haystack(k: Kegiatan) {
   ]
     .join(' ')
     .toLowerCase()
-}
-
-/** Isi sheet "terlaksana": tempat boleh dipilih dari Database (opsional) agar hitungan kunjungannya bertambah. */
-function DoneBody({
-  item,
-  tempat,
-  onCancel,
-  onConfirm,
-}: {
-  item: Kegiatan
-  tempat: TempatRingkas[]
-  onCancel: () => void
-  onConfirm: (tempatId: string | null) => void
-}) {
-  const linked = tempat.find((t) => t.id === item.tempatId) ?? null
-  const [text, setText] = useState('')
-  const [picked, setPicked] = useState<TempatRingkas | null>(null)
-
-  return (
-    <div className="space-y-3">
-      <p className="text-muted">
-        &quot;{item.kegiatan}&quot; akan pindah ke Histori dan tidak bisa diedit lagi.
-      </p>
-      {item.fotos.length > 0 && (
-        <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Lampiran Rencana ({item.fotos.length} file) akan dihapus. Histori mulai kosong; kamu bisa mengunggah lagi dari
-          Histori.
-        </p>
-      )}
-      {linked ? (
-        <p className="rounded-xl bg-done/10 px-3 py-2 text-sm text-done">
-          Kunjungan ke <strong>{linked.nama}</strong> akan bertambah 1.
-        </p>
-      ) : (
-        <PlaceSuggest
-          label="Di tempat mana? (boleh dilewati)"
-          places={tempat}
-          value={text}
-          picked={picked}
-          onText={(v) => {
-            setText(v)
-            if (picked && v !== picked.nama) setPicked(null)
-          }}
-          onPick={(t) => {
-            setPicked(t)
-            setText(t.nama)
-          }}
-          placeholder="Ketik nama tempat dari Database"
-          maxLength={150}
-        />
-      )}
-      <div className="grid grid-cols-2 gap-3 pt-1">
-        <button type="button" onClick={onCancel} className="h-12 rounded-xl bg-gray-100 font-semibold">
-          Batal
-        </button>
-        <button
-          type="button"
-          onClick={() => onConfirm(linked ? null : (picked?.id ?? null))}
-          className="h-12 rounded-xl bg-done font-semibold text-white"
-        >
-          Ya, terlaksana
-        </button>
-      </div>
-    </div>
-  )
 }
 
 export function KegiatanList({
@@ -262,20 +196,14 @@ export function KegiatanList({
         <KegiatanForm initial={editing} today={today} tempat={tempat} onDone={() => setFormOpen(false)} />
       </Sheet>
 
-      <Sheet open={confirm?.kind === 'done'} title="Yakin sudah terlaksana?" onClose={() => setConfirm(null)}>
-        {confirm?.kind === 'done' && (
-          <DoneBody
-            item={confirm.item}
-            tempat={tempat}
-            onCancel={() => setConfirm(null)}
-            onConfirm={(tempatId) => {
-              const id = confirm.item.id
-              setConfirm(null)
-              track(markTerlaksana(id, tempatId), 'Pindah ke Histori', 'Memproses...')
-            }}
-          />
-        )}
-      </Sheet>
+      <ConfirmSheet
+        open={confirm?.kind === 'done'}
+        title="Sudah terlaksana?"
+        message={`"${confirm?.item.kegiatan ?? ''}"`}
+        confirmLabel="Ya"
+        onClose={() => setConfirm(null)}
+        onConfirm={() => confirm && track(markTerlaksana(confirm.item.id), 'Pindah ke Histori', 'Memproses...')}
+      />
       <ConfirmSheet
         open={confirm?.kind === 'delete'}
         title="Hapus rencana?"

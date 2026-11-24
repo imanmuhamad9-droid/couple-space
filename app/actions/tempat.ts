@@ -21,13 +21,11 @@ const SaveInput = z.object({
   buka: time,
   tutup: time,
   linkMaps: z.string().trim().max(1000, 'Link terlalu panjang').default(''),
-  /** Hanya dikirim saat edit; tempat baru mulai dari 0. */
-  kunjungan: z.coerce.number().int('Kunjungan harus angka bulat').min(0).max(9999).optional(),
 })
 
 export async function saveTempat(input: z.input<typeof SaveInput>) {
   return run(async () => {
-    const { id, linkMaps, kunjungan, ...v } = SaveInput.parse(input)
+    const { id, linkMaps, ...v } = SaveInput.parse(input)
 
     // Gagal mencari koordinat tidak boleh menggagalkan simpan.
     const found = await resolveCoords(linkMaps, v.nama, v.kota).catch(() => ({
@@ -41,7 +39,6 @@ export async function saveTempat(input: z.input<typeof SaveInput>) {
       link_maps: linkMaps,
       lat: coords?.lat ?? null,
       lng: coords?.lng ?? null,
-      ...(id && kunjungan !== undefined ? { kunjungan } : {}),
     }
 
     let tempatId = id
@@ -62,17 +59,6 @@ export async function deleteTempat(idRaw: string) {
     const id = z.uuid().parse(idRaw)
     await removeOwnerFiles('tempat_id', id)
     must(await admin().from('tempat').delete().eq('id', id))
-    revalidatePath('/', 'layout')
-  })
-}
-
-/** Tambah satu kunjungan (+1). Dibaca lalu ditulis; cukup untuk satu pengguna. */
-export async function tambahKunjungan(idRaw: string) {
-  return run(async () => {
-    const id = z.uuid().parse(idRaw)
-    const cur = must(await admin().from('tempat').select('kunjungan').eq('id', id).maybeSingle())
-    if (!cur.data) throw new Error('Tempat tidak ditemukan')
-    must(await admin().from('tempat').update({ kunjungan: (cur.data.kunjungan as number) + 1 }).eq('id', id))
     revalidatePath('/', 'layout')
   })
 }

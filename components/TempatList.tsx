@@ -3,7 +3,7 @@
 import { ArrowUpDown, Check, LocateFixed, Map as MapIcon } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useMemo, useState } from 'react'
-import { deleteTempat, tambahKunjungan } from '@/app/actions/tempat'
+import { deleteTempat } from '@/app/actions/tempat'
 import { useLocation } from '@/hooks/useLocation'
 import { KATEGORI, KOTA, TEMPAT_PER_HALAMAN } from '@/lib/constants'
 import { haversineKm } from '@/lib/geo'
@@ -185,7 +185,6 @@ export function TempatList({ items }: { items: Tempat[] }) {
               onEdit={() => openForm(t)}
               onDelete={() => setDeleting(t)}
               onOpenPhoto={() => setViewerId(t.id)}
-              onVisit={() => track(tambahKunjungan(t.id), 'Kunjungan +1', 'Menyimpan...')}
             />
           ))}
         </div>

@@ -64,50 +64,27 @@ export async function deleteKegiatan(idRaw: string) {
 }
 
 /**
- * Tandai terlaksana. Jika kegiatan terhubung ke tempat (atau `tempatIdRaw` dipilih saat ini),
- * hitungan kunjungan tempat itu bertambah 1. Tanpa tempat: lewati saja.
+ * Tandai terlaksana. Lampiran Rencana dihapus (Histori mulai kosong).
+ * Jumlah kunjungan tempat tidak disimpan di sini: dihitung dari kegiatan terlaksana yang terhubung ke tempat itu.
  */
-export async function markTerlaksana(idRaw: string, tempatIdRaw?: string | null) {
+export async function markTerlaksana(idRaw: string) {
   return run(async () => {
     const id = Id.parse(idRaw)
-    const picked = tempatIdRaw ? Id.parse(tempatIdRaw) : null
+    if ((await statusOf(id)) !== 'rencana') throw new Error('Kegiatan ini sudah terlaksana')
 
-    const cur = must(await admin().from('kegiatan').select('*').eq('id', id).maybeSingle())
-    if (!cur.data) throw new Error('Kegiatan tidak ditemukan')
-    const row = cur.data as { status: string; tempat_id?: string | null }
-    if (row.status !== 'rencana') throw new Error('Kegiatan ini sudah terlaksana')
-
-    const tempatId = row.tempat_id ?? picked
     must(
       await admin()
         .from('kegiatan')
-        .update({
-          status: 'terlaksana',
-          terlaksana_at: new Date().toISOString(),
-          ...(tempatId && !row.tempat_id ? { tempat_id: tempatId } : {}),
-        })
+        .update({ status: 'terlaksana', terlaksana_at: new Date().toISOString() })
         .eq('id', id)
         .eq('status', 'rencana'),
     )
 
-    // Lampiran Rencana tidak ikut pindah ke Histori: hapus file dan barisnya.
     let lampiranGagal = false
     try {
       await clearOwnerFiles('kegiatan_id', id)
     } catch {
       lampiranGagal = true
-    }
-
-    // Gagal menghitung kunjungan tidak boleh membatalkan status terlaksana.
-    if (tempatId) {
-      try {
-        const t = must(await admin().from('tempat').select('kunjungan').eq('id', tempatId).maybeSingle())
-        if (t.data) {
-          must(await admin().from('tempat').update({ kunjungan: (t.data.kunjungan as number) + 1 }).eq('id', tempatId))
-        }
-      } catch {
-        /* abaikan */
-      }
     }
     refresh()
     if (lampiranGagal) throw new Error('Sudah terlaksana, tetapi lampiran Rencana gagal dihapus. Hapus manual dari Histori.')
