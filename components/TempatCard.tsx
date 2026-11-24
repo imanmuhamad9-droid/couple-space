@@ -1,15 +1,9 @@
 'use client'
 
 import { ExternalLink, ImageIcon, Pencil, Trash2 } from 'lucide-react'
-import { isHttpLink } from '@/lib/geo'
+import { mapsUrl } from '@/lib/geo'
 import type { Tempat } from '@/lib/types'
 import { UploadButton } from './Photos'
-
-function mapsUrl(t: Tempat): string {
-  if (isHttpLink(t.linkMaps)) return t.linkMaps.trim()
-  const query = t.lat !== null && t.lng !== null ? `${t.lat},${t.lng}` : `${t.nama} ${t.kota}`
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
-}
 
 const icon = 'grid size-9 place-items-center rounded-full'
 

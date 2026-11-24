@@ -1,6 +1,7 @@
 'use client'
 
-import { LocateFixed } from 'lucide-react'
+import { LocateFixed, Map as MapIcon } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { useMemo, useState } from 'react'
 import { deleteTempat } from '@/app/actions/tempat'
 import { useLocation } from '@/hooks/useLocation'
@@ -13,6 +14,12 @@ import { ConfirmSheet, Sheet } from './Sheet'
 import { TempatCard } from './TempatCard'
 import { TempatForm } from './TempatForm'
 import { Chip, Empty, Fab, Field, inputCls, PageHeader, Pagination, SearchBox, SubmitButton } from './ui'
+
+// Leaflet butuh browser, jadi dimuat hanya saat peta dibuka.
+const MapView = dynamic(() => import('./MapView'), {
+  ssr: false,
+  loading: () => <div className="fixed inset-0 z-50 grid place-items-center bg-gray-200 text-muted">Memuat peta...</div>,
+})
 
 export function TempatList({ items }: { items: Tempat[] }) {
   const { track, toast } = useFeedback()
@@ -27,6 +34,7 @@ export function TempatList({ items }: { items: Tempat[] }) {
   const [viewerId, setViewerId] = useState<string | null>(null)
   const [manualOpen, setManualOpen] = useState(false)
   const [manualText, setManualText] = useState('')
+  const [mapOpen, setMapOpen] = useState(false)
 
   // Chip hanya tampil untuk nilai yang punya data; urutan mengikuti daftar tetap.
   const kategoriAda = KATEGORI.filter((k) => items.some((t) => t.kategori === k))
@@ -74,15 +82,25 @@ export function TempatList({ items }: { items: Tempat[] }) {
         title="Database"
         info="database"
         right={
-          <button
-            type="button"
-            onClick={onLocate}
-            disabled={locating}
-            aria-label="Ambil lokasi saya"
-            className={`grid size-8 place-items-center rounded-full ${me ? 'bg-upload text-white' : 'bg-gray-200 text-muted'} ${locating ? 'animate-pulse' : ''}`}
-          >
-            <LocateFixed size={17} />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setMapOpen(true)}
+              aria-label="Buka peta"
+              className="grid size-8 place-items-center rounded-full bg-gray-200 text-muted"
+            >
+              <MapIcon size={17} />
+            </button>
+            <button
+              type="button"
+              onClick={onLocate}
+              disabled={locating}
+              aria-label="Ambil lokasi saya"
+              className={`grid size-8 place-items-center rounded-full ${me ? 'bg-upload text-white' : 'bg-gray-200 text-muted'} ${locating ? 'animate-pulse' : ''}`}
+            >
+              <LocateFixed size={17} />
+            </button>
+          </>
         }
       />
       <SearchBox
@@ -181,6 +199,15 @@ export function TempatList({ items }: { items: Tempat[] }) {
           <SubmitButton busy={false}>Simpan lokasi</SubmitButton>
         </form>
       </Sheet>
+
+      {mapOpen && (
+        <MapView
+          places={rows.map(({ t, km }) => ({ tempat: t, km }))}
+          me={me}
+          onLocate={onLocate}
+          onClose={() => setMapOpen(false)}
+        />
+      )}
 
       {viewerId && <PhotoViewer fotos={viewerFotos} startIndex={0} onClose={() => setViewerId(null)} />}
     </>

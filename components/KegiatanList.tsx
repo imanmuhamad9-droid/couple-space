@@ -3,9 +3,10 @@
 import { useMemo, useState } from 'react'
 import { deleteKegiatan, markTerlaksana, reorderKegiatan } from '@/app/actions/kegiatan'
 import { useDragReorder } from '@/hooks/useDragReorder'
+import { useMinute } from '@/hooks/useMinute'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
-import { formatTanggal, formatTanggalPanjang, formatTanggalSingkat, rupiah } from '@/lib/format'
-import { moveItem } from '@/lib/schedule'
+import { formatTanggal, formatTanggalPanjang, formatTanggalSingkat, nowJakarta, rupiah } from '@/lib/format'
+import { kegiatanBerlangsung, moveItem } from '@/lib/schedule'
 import type { Kegiatan } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { KegiatanCard } from './KegiatanCard'
@@ -95,6 +96,14 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
     },
   })
 
+  // Kartu yang sedang berlangsung (hanya di Rencana). minute = 0 di server/hidrasi: belum ada sorotan.
+  const minute = useMinute()
+  const aktifId = (() => {
+    if (mode !== 'rencana' || minute === 0) return null
+    const now = nowJakarta(minute * 60_000)
+    return kegiatanBerlangsung(merged, now.tanggal, now.menit)
+  })()
+
   const viewerFotos = viewer ? (merged.find((k) => k.id === viewer.ownerId)?.fotos ?? []) : []
   const title = mode === 'rencana' ? 'Rencana' : 'Histori'
 
@@ -148,6 +157,7 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
                         item={item}
                         mode={mode}
                         dragging={isDragged}
+                        active={item.id === aktifId}
                         style={isDragged ? { transform: `translateY(${dy}px)` } : undefined}
                         dragProps={mode === 'rencana' ? bind(item.id) : undefined}
                         onDone={() => setConfirm({ kind: 'done', item })}

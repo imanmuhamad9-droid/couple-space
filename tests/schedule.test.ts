@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { moveItem, type Change, type Item } from '../lib/schedule'
+import { kegiatanBerlangsung, moveItem, type Change, type Item } from '../lib/schedule'
 
 const D1 = '2026-11-24'
 const D2 = '2026-11-25'
@@ -91,4 +91,26 @@ describe('moveItem - histori', () => {
   it('id tidak dikenal mengembalikan kosong', () => {
     expect(moveItem(base(), 'zzz', D1, 0)).toEqual([])
   })
+})
+
+describe('kegiatanBerlangsung', () => {
+  const hari = [
+    { id: 'a', tanggal: D1, jam: '07:00' },
+    { id: 'b', tanggal: D1, jam: '10:00' },
+    { id: 'c', tanggal: D1, jam: '13:00' },
+    { id: 'z', tanggal: D2, jam: '09:00' },
+  ]
+  const m = (h: number, min = 0) => h * 60 + min
+
+  it('belum ada yang mulai', () => expect(kegiatanBerlangsung(hari, D1, m(6, 59))).toBeNull())
+  it('tepat pada jam mulai', () => expect(kegiatanBerlangsung(hari, D1, m(7))).toBe('a'))
+  it('berlangsung sampai kegiatan berikutnya mulai', () => {
+    expect(kegiatanBerlangsung(hari, D1, m(9, 59))).toBe('a')
+    expect(kegiatanBerlangsung(hari, D1, m(10))).toBe('b')
+  })
+  it('kegiatan terakhir berlangsung 2 jam', () => {
+    expect(kegiatanBerlangsung(hari, D1, m(14, 59))).toBe('c')
+    expect(kegiatanBerlangsung(hari, D1, m(15))).toBeNull()
+  })
+  it('hari lain tidak ikut', () => expect(kegiatanBerlangsung(hari, D2, m(8))).toBeNull())
 })

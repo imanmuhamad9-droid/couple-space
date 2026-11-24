@@ -37,7 +37,16 @@ export function Thumbs({ fotos, max = 4, onOpen }: { fotos: FotoItem[]; max?: nu
 }
 
 /** Tombol ikon biru: pilih foto dari galeri, kecilkan, lalu upload. */
-export function UploadButton({ kind, ownerId }: { kind: 'kegiatan' | 'tempat'; ownerId: string }) {
+export function UploadButton({
+  kind,
+  ownerId,
+  light = false,
+}: {
+  kind: 'kegiatan' | 'tempat'
+  ownerId: string
+  /** Gaya terang untuk kartu bergradien. */
+  light?: boolean
+}) {
   const input = useRef<HTMLInputElement>(null)
   const upload = useUpload()
   return (
@@ -46,7 +55,7 @@ export function UploadButton({ kind, ownerId }: { kind: 'kegiatan' | 'tempat'; o
         type="button"
         aria-label="Upload foto"
         onClick={() => input.current?.click()}
-        className="grid size-9 place-items-center rounded-full bg-upload text-white active:scale-95"
+        className={`grid size-9 place-items-center rounded-full text-white active:scale-95 ${light ? 'bg-white/25' : 'bg-upload'}`}
       >
         <ImagePlus size={16} />
       </button>

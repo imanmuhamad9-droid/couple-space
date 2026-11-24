@@ -1,3 +1,5 @@
+import type { Tempat } from './types'
+
 export type Coords = { lat: number; lng: number }
 
 const NUM = '(-?\\d+(?:\\.\\d+)?)'
@@ -53,4 +55,11 @@ export function haversineKm(a: Coords, b: Coords): number {
 
 export function isHttpLink(s: string): boolean {
   return /^https?:\/\//i.test(s.trim())
+}
+
+/** Link "Buka di Maps": link tersimpan jika ada, jika tidak koordinat atau nama + kota. */
+export function mapsUrl(t: Pick<Tempat, 'linkMaps' | 'lat' | 'lng' | 'nama' | 'kota'>): string {
+  if (isHttpLink(t.linkMaps)) return t.linkMaps.trim()
+  const query = t.lat !== null && t.lng !== null ? `${t.lat},${t.lng}` : `${t.nama} ${t.kota}`
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 }

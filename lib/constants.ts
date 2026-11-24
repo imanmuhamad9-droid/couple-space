@@ -26,6 +26,9 @@ export const KOTA = [
   'Bali',
   'Malang',
   'Surabaya',
+  'Singapura',
+  'Bangkok',
+  'Lainnya',
 ] as const
 
 export const ITEM_PER_HALAMAN = 20 // kartu per halaman di Rencana dan Histori

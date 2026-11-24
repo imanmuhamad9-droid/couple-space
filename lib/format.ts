@@ -54,6 +54,24 @@ export function rupiah(n: number): string {
   return `Rp ${new Intl.NumberFormat('id-ID').format(n)}`
 }
 
+/** Tanggal dan menit-sejak-tengah-malam (zona Jakarta) untuk waktu `ms`. */
+export function nowJakarta(ms: number): { tanggal: string; menit: number } {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(new Date(ms))
+      .map((x) => [x.type, x.value]),
+  )
+  return { tanggal: `${p.year}-${p.month}-${p.day}`, menit: Number(p.hour) * 60 + Number(p.minute) }
+}
+
 /** Postgres mengembalikan "HH:MM:SS"; tampilkan "HH:MM". */
 export function hhmm(t: string | null): string | null {
   return t ? t.slice(0, 5) : null

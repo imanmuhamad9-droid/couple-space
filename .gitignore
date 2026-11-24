@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# data pribadi (ekspor Google dan SQL hasil impor)
+/takeout-*
+/supabase/import_*.sql
