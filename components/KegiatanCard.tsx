@@ -13,6 +13,8 @@ type Props = {
   dragging: boolean
   /** Sedang berlangsung sekarang: kartu bergradien biru. */
   active?: boolean
+  /** Jika lokasi dipilih dari Database: tautan Maps tempat itu. */
+  mapsHref?: string
   style?: CSSProperties
   dragProps?: HTMLAttributes<HTMLElement>
   onDone: () => void
@@ -29,6 +31,7 @@ export function KegiatanCard({
   mode,
   dragging,
   active = false,
+  mapsHref,
   style,
   dragProps,
   onDone,
@@ -80,7 +83,17 @@ export function KegiatanCard({
       <div className="mt-1 flex items-center gap-2">
         <div className={`min-w-0 flex-1 space-y-0.5 text-xs ${active ? 'text-white/90' : 'text-muted'}`}>
           {item.lokasi &&
-            (linkLokasi ? (
+            (mapsHref ? (
+              <a
+                href={mapsHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center gap-1 font-medium ${active ? 'text-white underline' : 'text-upload'}`}
+              >
+                <MapPin size={13} className="shrink-0" />
+                <span className="truncate">{item.lokasi}</span>
+              </a>
+            ) : linkLokasi ? (
               <a
                 href={item.lokasi}
                 target="_blank"

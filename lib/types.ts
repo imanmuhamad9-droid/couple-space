@@ -10,6 +10,8 @@ export type Kegiatan = {
   lokasi: string
   budget: number
   status: Status
+  /** Tempat di Database yang dipilih saat membuat rencana (boleh kosong). */
+  tempatId: string | null
   fotos: FotoItem[]
 }
 
@@ -29,5 +31,11 @@ export type Tempat = {
   createdAt: string
   fotos: FotoItem[]
 }
+
+/** Tempat versi ringan (tanpa foto) untuk rekomendasi dan tautan peta. */
+export type TempatRingkas = Pick<
+  Tempat,
+  'id' | 'nama' | 'kategori' | 'kota' | 'linkMaps' | 'lat' | 'lng' | 'kunjungan'
+>
 
 export type Result<T = void> = { ok: true; data: T } | { ok: false; error: string }

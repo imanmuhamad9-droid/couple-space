@@ -2,18 +2,21 @@
 
 import { useState, type FormEvent } from 'react'
 import { saveKegiatan } from '@/app/actions/kegiatan'
-import type { Kegiatan } from '@/lib/types'
+import type { Kegiatan, TempatRingkas } from '@/lib/types'
 import { useFeedback } from './Feedback'
+import { PlaceSuggest } from './PlaceSuggest'
 import { Field, inputCls, PickerField, SubmitButton } from './ui'
 
 /** Isi sheet tambah/edit rencana. Di-mount baru tiap sheet dibuka, jadi state selalu segar. */
 export function KegiatanForm({
   initial,
   today,
+  tempat,
   onDone,
 }: {
   initial: Kegiatan | null
   today: string
+  tempat: TempatRingkas[]
   onDone: () => void
 }) {
   const { track } = useFeedback()
@@ -21,8 +24,17 @@ export function KegiatanForm({
   const [jam, setJam] = useState(initial?.jam ?? '09:00')
   const [kegiatan, setKegiatan] = useState(initial?.kegiatan ?? '')
   const [lokasi, setLokasi] = useState(initial?.lokasi ?? '')
+  const [picked, setPicked] = useState<TempatRingkas | null>(
+    () => tempat.find((t) => t.id === initial?.tempatId) ?? null,
+  )
   const [budget, setBudget] = useState(initial && initial.budget > 0 ? String(initial.budget) : '')
   const [busy, setBusy] = useState(false)
+
+  // Mengubah teks setelah memilih berarti bukan tempat itu lagi: putuskan hubungannya.
+  function onText(v: string) {
+    setLokasi(v)
+    if (picked && v !== picked.nama) setPicked(null)
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -35,6 +47,8 @@ export function KegiatanForm({
         kegiatan,
         lokasi,
         budget: budget === '' ? 0 : Number(budget),
+        // uuid = terhubung, null = putus dari tempat sebelumnya, undefined = tidak berubah
+        tempatId: picked ? picked.id : initial?.tempatId ? null : undefined,
       }),
       'Tersimpan',
     )
@@ -58,9 +72,17 @@ export function KegiatanForm({
           className={inputCls}
         />
       </Field>
-      <Field label="Lokasi (teks atau link Google Maps)">
-        <input value={lokasi} onChange={(e) => setLokasi(e.target.value)} maxLength={500} className={inputCls} />
-      </Field>
+      <PlaceSuggest
+        label="Lokasi (nama tempat, teks, atau link Maps)"
+        places={tempat}
+        value={lokasi}
+        picked={picked}
+        onText={onText}
+        onPick={(t) => {
+          setPicked(t)
+          setLokasi(t.nama)
+        }}
+      />
       <Field label="Budget (Rp, opsional)">
         <input
           inputMode="numeric"

@@ -15,6 +15,8 @@ const SaveInput = z.object({
   kegiatan: z.string().trim().min(1, 'Isi dulu mau ngapain').max(200, 'Kegiatan terlalu panjang'),
   lokasi: z.string().trim().max(500, 'Lokasi terlalu panjang').default(''),
   budget: z.coerce.number().int('Budget harus angka bulat').min(0).max(2_000_000_000).default(0),
+  /** uuid = hubungkan ke tempat, null = putuskan, tidak dikirim = jangan diubah. */
+  tempatId: Id.nullable().optional(),
 })
 
 const ChangesInput = z
@@ -39,7 +41,8 @@ async function statusOf(id: string): Promise<string> {
 
 export async function saveKegiatan(input: z.input<typeof SaveInput>) {
   return run(async () => {
-    const { id, ...v } = SaveInput.parse(input)
+    const { id, tempatId, ...fields } = SaveInput.parse(input)
+    const v = tempatId === undefined ? fields : { ...fields, tempat_id: tempatId }
     if (id) {
       if ((await statusOf(id)) === 'terlaksana') throw new Error('Kegiatan yang sudah terlaksana tidak bisa diubah')
       must(await admin().from('kegiatan').update(v).eq('id', id))
@@ -60,16 +63,44 @@ export async function deleteKegiatan(idRaw: string) {
   })
 }
 
-export async function markTerlaksana(idRaw: string) {
+/**
+ * Tandai terlaksana. Jika kegiatan terhubung ke tempat (atau `tempatIdRaw` dipilih saat ini),
+ * hitungan kunjungan tempat itu bertambah 1. Tanpa tempat: lewati saja.
+ */
+export async function markTerlaksana(idRaw: string, tempatIdRaw?: string | null) {
   return run(async () => {
     const id = Id.parse(idRaw)
+    const picked = tempatIdRaw ? Id.parse(tempatIdRaw) : null
+
+    const cur = must(await admin().from('kegiatan').select('*').eq('id', id).maybeSingle())
+    if (!cur.data) throw new Error('Kegiatan tidak ditemukan')
+    const row = cur.data as { status: string; tempat_id?: string | null }
+    if (row.status !== 'rencana') throw new Error('Kegiatan ini sudah terlaksana')
+
+    const tempatId = row.tempat_id ?? picked
     must(
       await admin()
         .from('kegiatan')
-        .update({ status: 'terlaksana', terlaksana_at: new Date().toISOString() })
+        .update({
+          status: 'terlaksana',
+          terlaksana_at: new Date().toISOString(),
+          ...(tempatId && !row.tempat_id ? { tempat_id: tempatId } : {}),
+        })
         .eq('id', id)
         .eq('status', 'rencana'),
     )
+
+    // Gagal menghitung kunjungan tidak boleh membatalkan status terlaksana.
+    if (tempatId) {
+      try {
+        const t = must(await admin().from('tempat').select('kunjungan').eq('id', tempatId).maybeSingle())
+        if (t.data) {
+          must(await admin().from('tempat').update({ kunjungan: (t.data.kunjungan as number) + 1 }).eq('id', tempatId))
+        }
+      } catch {
+        /* abaikan */
+      }
+    }
     refresh()
   })
 }

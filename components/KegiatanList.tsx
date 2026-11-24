@@ -6,12 +6,14 @@ import { useDragReorder } from '@/hooks/useDragReorder'
 import { useMinute } from '@/hooks/useMinute'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
 import { formatTanggal, formatTanggalPanjang, formatTanggalSingkat, nowJakarta, rupiah } from '@/lib/format'
+import { mapsUrl } from '@/lib/geo'
 import { kegiatanBerlangsung, moveItem } from '@/lib/schedule'
-import type { Kegiatan } from '@/lib/types'
+import type { Kegiatan, TempatRingkas } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { KegiatanCard } from './KegiatanCard'
 import { KegiatanForm } from './KegiatanForm'
 import { PhotoViewer } from './Photos'
+import { PlaceSuggest } from './PlaceSuggest'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { Empty, Fab, PageHeader, Pagination, SearchBox } from './ui'
 
@@ -35,7 +37,76 @@ function haystack(k: Kegiatan) {
     .toLowerCase()
 }
 
-export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiatan[]; today: string }) {
+/** Isi sheet "terlaksana": tempat boleh dipilih dari Database (opsional) agar hitungan kunjungannya bertambah. */
+function DoneBody({
+  item,
+  tempat,
+  onCancel,
+  onConfirm,
+}: {
+  item: Kegiatan
+  tempat: TempatRingkas[]
+  onCancel: () => void
+  onConfirm: (tempatId: string | null) => void
+}) {
+  const linked = tempat.find((t) => t.id === item.tempatId) ?? null
+  const [text, setText] = useState('')
+  const [picked, setPicked] = useState<TempatRingkas | null>(null)
+
+  return (
+    <div className="space-y-3">
+      <p className="text-muted">
+        &quot;{item.kegiatan}&quot; akan pindah ke Histori dan tidak bisa diedit lagi.
+      </p>
+      {linked ? (
+        <p className="rounded-xl bg-done/10 px-3 py-2 text-sm text-done">
+          Kunjungan ke <strong>{linked.nama}</strong> akan bertambah 1.
+        </p>
+      ) : (
+        <PlaceSuggest
+          label="Di tempat mana? (boleh dilewati)"
+          places={tempat}
+          value={text}
+          picked={picked}
+          onText={(v) => {
+            setText(v)
+            if (picked && v !== picked.nama) setPicked(null)
+          }}
+          onPick={(t) => {
+            setPicked(t)
+            setText(t.nama)
+          }}
+          placeholder="Ketik nama tempat dari Database"
+          maxLength={150}
+        />
+      )}
+      <div className="grid grid-cols-2 gap-3 pt-1">
+        <button type="button" onClick={onCancel} className="h-12 rounded-xl bg-gray-100 font-semibold">
+          Batal
+        </button>
+        <button
+          type="button"
+          onClick={() => onConfirm(linked ? null : (picked?.id ?? null))}
+          className="h-12 rounded-xl bg-done font-semibold text-white"
+        >
+          Ya, terlaksana
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export function KegiatanList({
+  mode,
+  items,
+  today,
+  tempat,
+}: {
+  mode: Mode
+  items: Kegiatan[]
+  today: string
+  tempat: TempatRingkas[]
+}) {
   const { track } = useFeedback()
   const [q, setQ] = useState('')
   const [page, setPage] = useState(0)
@@ -104,6 +175,8 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
     return kegiatanBerlangsung(merged, now.tanggal, now.menit)
   })()
 
+  const tempatById = useMemo(() => new Map(tempat.map((t) => [t.id, t])), [tempat])
+
   const viewerFotos = viewer ? (merged.find((k) => k.id === viewer.ownerId)?.fotos ?? []) : []
   const title = mode === 'rencana' ? 'Rencana' : 'Histori'
 
@@ -158,6 +231,7 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
                         mode={mode}
                         dragging={isDragged}
                         active={item.id === aktifId}
+                        mapsHref={item.tempatId && tempatById.has(item.tempatId) ? mapsUrl(tempatById.get(item.tempatId)!) : undefined}
                         style={isDragged ? { transform: `translateY(${dy}px)` } : undefined}
                         dragProps={mode === 'rencana' ? bind(item.id) : undefined}
                         onDone={() => setConfirm({ kind: 'done', item })}
@@ -179,17 +253,23 @@ export function KegiatanList({ mode, items, today }: { mode: Mode; items: Kegiat
       {mode === 'rencana' && <Fab label="Tambah rencana" onClick={() => openForm(null)} />}
 
       <Sheet open={formOpen} title={editing ? 'Edit Rencana' : 'Tambah Rencana'} onClose={() => setFormOpen(false)}>
-        <KegiatanForm initial={editing} today={today} onDone={() => setFormOpen(false)} />
+        <KegiatanForm initial={editing} today={today} tempat={tempat} onDone={() => setFormOpen(false)} />
       </Sheet>
 
-      <ConfirmSheet
-        open={confirm?.kind === 'done'}
-        title="Yakin sudah terlaksana?"
-        message={`"${confirm?.item.kegiatan ?? ''}" akan pindah ke Histori dan tidak bisa diedit lagi.`}
-        confirmLabel="Ya, terlaksana"
-        onClose={() => setConfirm(null)}
-        onConfirm={() => confirm && track(markTerlaksana(confirm.item.id), 'Pindah ke Histori', 'Memproses...')}
-      />
+      <Sheet open={confirm?.kind === 'done'} title="Yakin sudah terlaksana?" onClose={() => setConfirm(null)}>
+        {confirm?.kind === 'done' && (
+          <DoneBody
+            item={confirm.item}
+            tempat={tempat}
+            onCancel={() => setConfirm(null)}
+            onConfirm={(tempatId) => {
+              const id = confirm.item.id
+              setConfirm(null)
+              track(markTerlaksana(id, tempatId), 'Pindah ke Histori', 'Memproses...')
+            }}
+          />
+        )}
+      </Sheet>
       <ConfirmSheet
         open={confirm?.kind === 'delete'}
         title="Hapus rencana?"
