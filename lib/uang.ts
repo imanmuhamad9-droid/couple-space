@@ -51,16 +51,39 @@ export function labelPeriode(p: Periode): string {
   return `${formatTanggalSingkat(p.start)}${sy !== ey ? ` ${sy}` : ''} – ${formatTanggalSingkat(p.end)} ${ey}`
 }
 
-/** Saldo = semua uang masuk dikurangi semua uang keluar. Masuk/keluar hanya untuk periode `p` (jika diberikan). */
-export function ringkasan(items: Transaksi[], p?: Periode) {
+/**
+ * Perubahan saldo akibat satu transaksi. `dompetId` null = total semua dompet:
+ * pindah dana tidak mengubah total, hanya menggeser uang antar dompet.
+ */
+export function perubahan(t: Transaksi, dompetId: string | null): number {
+  if (t.jenis === 'pindah') {
+    if (dompetId === null) return 0
+    return (t.tujuanId === dompetId ? t.jumlah : 0) - (t.dompetId === dompetId ? t.jumlah : 0)
+  }
+  if (dompetId !== null && t.dompetId !== dompetId) return 0
+  return t.jenis === 'masuk' ? t.jumlah : -t.jumlah
+}
+
+/** Apakah transaksi ini tampil di riwayat dompet tersebut (null = semua dompet)? */
+export function milikDompet(t: Transaksi, dompetId: string | null): boolean {
+  return dompetId === null || t.dompetId === dompetId || t.tujuanId === dompetId
+}
+
+/**
+ * Saldo = semua perubahan sejak awal (tidak di-reset tiap periode). Masuk/keluar hanya untuk periode `p`
+ * dan tidak menghitung pindah dana. `dompetId` null = semua dompet.
+ */
+export function ringkasan(items: Transaksi[], p?: Periode, dompetId: string | null = null) {
   let saldo = 0
   let masuk = 0
   let keluar = 0
   for (const t of items) {
-    saldo += t.jenis === 'masuk' ? t.jumlah : -t.jumlah
-    if (p && t.tanggal >= p.start && t.tanggal <= p.end) {
-      if (t.jenis === 'masuk') masuk += t.jumlah
-      else keluar += t.jumlah
+    saldo += perubahan(t, dompetId)
+    if (p && t.jenis !== 'pindah' && (dompetId === null || t.dompetId === dompetId)) {
+      if (t.tanggal >= p.start && t.tanggal <= p.end) {
+        if (t.jenis === 'masuk') masuk += t.jumlah
+        else keluar += t.jumlah
+      }
     }
   }
   return { saldo, masuk, keluar }

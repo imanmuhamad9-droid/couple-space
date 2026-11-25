@@ -1,10 +1,10 @@
 import { UangView } from '@/components/UangView'
-import { listTransaksi } from '@/lib/data'
+import { listDompet, listTransaksi } from '@/lib/data'
 import { todayJakarta } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
 export default async function UangPage() {
-  const items = await listTransaksi()
-  return <UangView items={items} today={todayJakarta()} />
+  const [items, dompet] = await Promise.all([listTransaksi(), listDompet()])
+  return <UangView items={items} dompet={dompet} today={todayJakarta()} />
 }

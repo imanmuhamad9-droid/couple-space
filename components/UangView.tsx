@@ -1,37 +1,153 @@
 'use client'
 
-import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import {
+  ArrowDownLeft,
+  ArrowRightLeft,
+  ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type UIEvent } from 'react'
+import { deleteDompet, saveDompet } from '@/app/actions/dompet'
 import { deleteTransaksi } from '@/app/actions/transaksi'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
 import { formatTanggal, rupiah } from '@/lib/format'
-import type { Transaksi } from '@/lib/types'
-import { geser, labelPeriode, periodeDari, ringkasan } from '@/lib/uang'
+import type { Dompet, Transaksi } from '@/lib/types'
+import { geser, labelPeriode, milikDompet, periodeDari, ringkasan } from '@/lib/uang'
 import { useFeedback } from './Feedback'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { TransaksiForm } from './TransaksiForm'
-import { Empty, PageHeader, Pagination } from './ui'
+import { Empty, Field, inputCls, PageHeader, Pagination, SubmitButton } from './ui'
 
-const tanda = (t: Transaksi) => (t.jenis === 'masuk' ? '+' : '−')
+const SEMUA = 'semua'
 
-export function UangView({ items, today }: { items: Transaksi[]; today: string }) {
+// Warna kartu per dompet (urut). Kartu "Keseluruhan" sengaja gelap dan netral.
+const WARNA = [
+  'from-blue-700 to-sky-500',
+  'from-emerald-700 to-emerald-500',
+  'from-violet-700 to-violet-500',
+  'from-amber-600 to-amber-400',
+  'from-rose-700 to-rose-500',
+]
+
+const jarak = 8 // gap-2 antar kartu (px), dipakai untuk menghitung posisi geser
+
+/** Isi sheet tambah/ganti nama dompet. */
+function DompetForm({
+  initial,
+  onDone,
+  onAskDelete,
+  alasanTerkunci,
+}: {
+  initial: Dompet | null
+  onDone: () => void
+  onAskDelete: () => void
+  /** Alasan dompet tidak bisa dihapus (null = boleh). */
+  alasanTerkunci: string | null
+}) {
+  const { track } = useFeedback()
+  const [nama, setNama] = useState(initial?.nama ?? '')
+  const [busy, setBusy] = useState(false)
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    const r = await track(saveDompet({ id: initial?.id, nama }), 'Tersimpan')
+    setBusy(false)
+    if (r.ok) onDone()
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <Field label="Nama dompet">
+        <input
+          required
+          maxLength={40}
+          value={nama}
+          onChange={(e) => setNama(e.target.value)}
+          placeholder="Contoh: Dana darurat"
+          className={inputCls}
+        />
+      </Field>
+      <SubmitButton busy={busy}>{initial ? 'Simpan nama' : 'Tambah dompet'}</SubmitButton>
+      {initial && (
+        <>
+          <button
+            type="button"
+            onClick={onAskDelete}
+            disabled={alasanTerkunci !== null}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-del/10 font-semibold text-del disabled:opacity-40"
+          >
+            <Trash2 size={17} /> Hapus dompet
+          </button>
+          {alasanTerkunci && <p className="text-center text-xs text-muted">{alasanTerkunci}</p>}
+        </>
+      )}
+    </form>
+  )
+}
+
+export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet: Dompet[]; today: string }) {
   const { track } = useFeedback()
   const sekarang = periodeDari(today)
   const [per, setPer] = useState(sekarang)
   const [page, setPage] = useState(0)
+  const [idx, setIdx] = useState(0) // kartu yang sedang terlihat; 0 = dompet pertama (Bulanan)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Transaksi | null>(null)
+  const [jenisAwal, setJenisAwal] = useState<Transaksi['jenis']>('keluar')
   const [selected, setSelected] = useState<Transaksi | null>(null)
   const [deleting, setDeleting] = useState<Transaksi | null>(null)
+  const [dompetSheet, setDompetSheet] = useState<{ edit: Dompet | null } | null>(null)
+  const [hapusDompet, setHapusDompet] = useState<Dompet | null>(null)
+  const rail = useRef<HTMLDivElement>(null)
+
+  const nama = useMemo(() => new Map(dompet.map((d) => [d.id, d.nama])), [dompet])
+
+  // Kartu: semua dompet, lalu "Keseluruhan" paling belakang (disembunyikan di ujung geseran).
+  const kartu = useMemo(
+    () => [...dompet.map((d) => ({ id: d.id, dompet: d })), { id: SEMUA, dompet: null as Dompet | null }],
+    [dompet],
+  )
+  const aktif = kartu[Math.min(idx, kartu.length - 1)]
+  const aktifId = aktif.id === SEMUA ? null : aktif.id
+
+  // Dompet baru muncul di sebelum "Keseluruhan": geser ke sana.
+  const prevLen = useRef(dompet.length)
+  useEffect(() => {
+    if (dompet.length > prevLen.current) {
+      const el = rail.current
+      const first = el?.firstElementChild as HTMLElement | null
+      if (el && first) el.scrollTo({ left: (dompet.length - 1) * (first.offsetWidth + jarak), behavior: 'smooth' })
+    }
+    prevLen.current = dompet.length
+  }, [dompet.length])
+
+  function onScroll(e: UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget
+    const first = el.firstElementChild as HTMLElement | null
+    if (first) setIdx(Math.round(el.scrollLeft / (first.offsetWidth + jarak)))
+  }
+
+  function keKartu(i: number) {
+    const el = rail.current
+    const first = el?.firstElementChild as HTMLElement | null
+    if (el && first) el.scrollTo({ left: i * (first.offsetWidth + jarak), behavior: 'smooth' })
+  }
 
   // items sudah terurut terbaru di atas, jadi yang terakhir adalah yang tertua.
   const tertua = items.length ? items[items.length - 1].tanggal : today
   const bisaMundur = per.start > tertua
   const bisaMaju = per.start < sekarang.start
 
-  const { saldo } = ringkasan(items)
-  const { masuk, keluar } = ringkasan(items, per)
-  const daftar = useMemo(() => items.filter((t) => t.tanggal >= per.start && t.tanggal <= per.end), [items, per])
+  const { masuk, keluar } = ringkasan(items, per, aktifId)
+  const daftar = useMemo(
+    () => items.filter((t) => milikDompet(t, aktifId) && t.tanggal >= per.start && t.tanggal <= per.end),
+    [items, per, aktifId],
+  )
 
   const pages = Math.max(1, Math.ceil(daftar.length / ITEM_PER_HALAMAN))
   const cur = Math.min(page, pages - 1)
@@ -43,30 +159,116 @@ export function UangView({ items, today }: { items: Transaksi[]; today: string }
     setPage(0)
   }
 
-  function buka(t: Transaksi | null) {
+  function bukaForm(t: Transaksi | null, jenis: Transaksi['jenis'] = 'keluar') {
     setEditing(t)
+    setJenisAwal(jenis)
     setFormOpen(true)
   }
 
+  // Tampilan satu baris riwayat, menyesuaikan dompet yang sedang dilihat.
+  function baris(t: Transaksi) {
+    if (t.jenis === 'pindah') {
+      const dari = nama.get(t.dompetId) ?? '?'
+      const ke = nama.get(t.tujuanId ?? '') ?? '?'
+      const catatan = t.keterangan !== 'Pindah dana' ? t.keterangan : null
+      if (aktifId === null) return { judul: `${dari} → ${ke}`, sub: catatan, jumlah: rupiah(t.jumlah), warna: 'text-upload' }
+      const keluarDariSini = t.dompetId === aktifId
+      return {
+        judul: keluarDariSini ? `Pindah ke ${ke}` : `Pindah dari ${dari}`,
+        sub: catatan,
+        jumlah: `${keluarDariSini ? '−' : '+'} ${rupiah(t.jumlah)}`,
+        warna: 'text-upload',
+      }
+    }
+    return {
+      judul: t.keterangan,
+      sub: aktifId === null ? (nama.get(t.dompetId) ?? null) : null,
+      jumlah: `${t.jenis === 'masuk' ? '+' : '−'} ${rupiah(t.jumlah)}`,
+      warna: t.jenis === 'masuk' ? 'text-done' : 'text-del',
+    }
+  }
+
   const nav = 'grid size-9 place-items-center rounded-full bg-white shadow-sm disabled:opacity-30'
+  const judulRiwayat = aktifId === null ? 'Riwayat · Semua dompet' : `Riwayat · ${nama.get(aktifId) ?? ''}`
+
+  // Dompet yang sedang diedit tidak boleh dihapus jika sudah punya transaksi atau tinggal satu.
+  const editDompet = dompetSheet?.edit ?? null
+  const alasanTerkunci =
+    editDompet === null
+      ? null
+      : dompet.length <= 1
+        ? 'Minimal harus ada satu dompet.'
+        : items.some((t) => t.dompetId === editDompet.id || t.tujuanId === editDompet.id)
+          ? 'Dompet ini sudah punya transaksi, jadi tidak bisa dihapus.'
+          : null
+
+  const detail = selected ? baris(selected) : null
 
   return (
     <>
       <PageHeader title="Uang" info="uang" />
 
-      <section
-        className={`mx-3 mb-3 rounded-2xl p-4 text-white shadow-md ${
-          saldo < 0 ? 'bg-gradient-to-br from-red-700 to-red-500' : 'bg-gradient-to-br from-blue-700 to-sky-500'
-        }`}
+      {/* Kartu dompet: geser ke samping. "Keseluruhan" ada paling belakang. */}
+      <div
+        ref={rail}
+        onScroll={onScroll}
+        className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-[7%] pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <p className="text-sm opacity-85">Uang kamu</p>
-        <p className="mt-0.5 text-3xl font-bold tabular-nums">
-          {saldo < 0 ? '−' : ''}
-          {rupiah(Math.abs(saldo))}
-        </p>
-      </section>
+        {kartu.map((k, i) => {
+          const saldo = ringkasan(items, undefined, k.id === SEMUA ? null : k.id).saldo
+          const warna =
+            k.id === SEMUA
+              ? 'from-slate-800 to-slate-600'
+              : saldo < 0
+                ? 'from-red-700 to-red-500'
+                : WARNA[i % WARNA.length]
+          return (
+            <section
+              key={k.id}
+              className={`relative w-[86%] shrink-0 snap-center rounded-2xl bg-gradient-to-br p-4 text-white shadow-md ${warna}`}
+            >
+              <p className="text-sm opacity-85">{k.dompet ? k.dompet.nama : 'Keseluruhan'}</p>
+              <p className="mt-0.5 text-3xl font-bold tabular-nums">
+                {saldo < 0 ? '−' : ''}
+                {rupiah(Math.abs(saldo))}
+              </p>
+              <p className="mt-1 text-xs opacity-75">{k.dompet ? 'Saldo dompet' : 'Total semua dompet'}</p>
+              {k.dompet && (
+                <button
+                  type="button"
+                  onClick={() => setDompetSheet({ edit: k.dompet })}
+                  aria-label={`Ubah dompet ${k.dompet.nama}`}
+                  className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-white/20 active:bg-white/30"
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
+            </section>
+          )
+        })}
+      </div>
 
-      <div className="mx-3 mb-2 flex items-center justify-between">
+      <div className="relative mt-2 flex items-center justify-center gap-1.5">
+        {kartu.map((k, i) => (
+          <button
+            key={k.id}
+            type="button"
+            onClick={() => keKartu(i)}
+            aria-label={k.dompet ? `Dompet ${k.dompet.nama}` : 'Keseluruhan'}
+            className={`h-1.5 rounded-full transition-all ${i === Math.min(idx, kartu.length - 1) ? 'w-4 bg-upload' : 'w-1.5 bg-gray-300'}`}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={() => setDompetSheet({ edit: null })}
+          aria-label="Tambah dompet"
+          className="absolute right-4 flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-muted shadow-sm"
+        >
+          <Plus size={12} /> Dompet
+        </button>
+      </div>
+
+      <div className="mx-3 mb-2 mt-3 flex items-center justify-between">
         <button type="button" aria-label="Periode sebelumnya" disabled={!bisaMundur} onClick={() => ganti(-1)} className={nav}>
           <ChevronLeft size={18} />
         </button>
@@ -94,15 +296,26 @@ export function UangView({ items, today }: { items: Transaksi[]; today: string }
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => buka(null)}
-        className="mx-3 mt-3 flex h-12 w-[calc(100%-1.5rem)] items-center justify-center gap-2 rounded-xl bg-upload font-semibold text-white active:scale-[0.99]"
-      >
-        <Plus size={20} /> Tambah transaksi
-      </button>
+      <div className="mx-3 mt-3 grid grid-cols-[1fr_auto] gap-2">
+        <button
+          type="button"
+          onClick={() => bukaForm(null)}
+          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-upload font-semibold text-white active:scale-[0.99]"
+        >
+          <Plus size={20} /> Tambah transaksi
+        </button>
+        <button
+          type="button"
+          onClick={() => bukaForm(null, 'pindah')}
+          disabled={dompet.length < 2}
+          aria-label="Pindah dana antar dompet"
+          className="flex h-12 items-center justify-center gap-1.5 rounded-xl bg-white px-4 font-semibold text-upload shadow-sm active:scale-[0.99] disabled:opacity-40"
+        >
+          <ArrowRightLeft size={18} /> Pindah
+        </button>
+      </div>
 
-      <h2 className="mx-4 mb-1 mt-5 text-xs font-semibold text-muted">Riwayat</h2>
+      <h2 className="mx-4 mb-1 mt-5 text-xs font-semibold text-muted">{judulRiwayat}</h2>
       {daftar.length === 0 ? (
         <Empty>Belum ada transaksi di periode ini.</Empty>
       ) : (
@@ -112,21 +325,23 @@ export function UangView({ items, today }: { items: Transaksi[]; today: string }
             <div className="space-y-1.5">
               {tampil
                 .filter((t) => t.tanggal === tgl)
-                .map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setSelected(t)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl bg-white px-3 py-2.5 text-left shadow-sm active:bg-gray-50"
-                  >
-                    <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{t.keterangan}</span>
-                    <span
-                      className={`shrink-0 text-sm font-semibold tabular-nums ${t.jenis === 'masuk' ? 'text-done' : 'text-del'}`}
+                .map((t) => {
+                  const b = baris(t)
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setSelected(t)}
+                      className="flex w-full items-center justify-between gap-3 rounded-xl bg-white px-3 py-2.5 text-left shadow-sm active:bg-gray-50"
                     >
-                      {tanda(t)} {rupiah(t.jumlah)}
-                    </span>
-                  </button>
-                ))}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-medium">{b.judul}</span>
+                        {b.sub && <span className="block truncate text-xs text-muted">{b.sub}</span>}
+                      </span>
+                      <span className={`shrink-0 text-sm font-semibold tabular-nums ${b.warna}`}>{b.jumlah}</span>
+                    </button>
+                  )
+                })}
             </div>
           </section>
         ))
@@ -135,16 +350,24 @@ export function UangView({ items, today }: { items: Transaksi[]; today: string }
       <Pagination page={cur} pages={pages} onChange={setPage} />
 
       <Sheet open={selected !== null} title="Transaksi" onClose={() => setSelected(null)}>
-        {selected && (
+        {selected && detail && (
           <div className="space-y-4">
             <div>
-              <p className={`text-2xl font-bold tabular-nums ${selected.jenis === 'masuk' ? 'text-done' : 'text-del'}`}>
-                {tanda(selected)} {rupiah(selected.jumlah)}
+              <p className={`text-2xl font-bold tabular-nums ${detail.warna}`}>
+                {selected.jenis === 'pindah' ? rupiah(selected.jumlah) : detail.jumlah}
               </p>
-              <p className="mt-1 break-words font-medium">{selected.keterangan}</p>
+              <p className="mt-1 break-words font-medium">
+                {selected.jenis === 'pindah'
+                  ? `${nama.get(selected.dompetId) ?? '?'} → ${nama.get(selected.tujuanId ?? '') ?? '?'}`
+                  : selected.keterangan}
+              </p>
               <p className="mt-0.5 text-sm text-muted">
-                {selected.jenis === 'masuk' ? 'Uang masuk' : 'Uang keluar'} · {formatTanggal(selected.tanggal)}
+                {selected.jenis === 'masuk' ? 'Uang masuk' : selected.jenis === 'keluar' ? 'Uang keluar' : 'Pindah dana'}
+                {selected.jenis !== 'pindah' && ` · ${nama.get(selected.dompetId) ?? '?'}`} · {formatTanggal(selected.tanggal)}
               </p>
+              {selected.jenis === 'pindah' && selected.keterangan !== 'Pindah dana' && (
+                <p className="mt-1 break-words text-sm text-muted">{selected.keterangan}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -152,7 +375,7 @@ export function UangView({ items, today }: { items: Transaksi[]; today: string }
                 onClick={() => {
                   const t = selected
                   setSelected(null)
-                  buka(t)
+                  bukaForm(t)
                 }}
                 className="flex h-12 items-center justify-center gap-2 rounded-xl bg-edit/10 font-semibold text-edit"
               >
@@ -177,6 +400,9 @@ export function UangView({ items, today }: { items: Transaksi[]; today: string }
         <TransaksiForm
           initial={editing}
           today={today}
+          dompet={dompet}
+          dompetAwal={aktifId ?? dompet[0]?.id ?? ''}
+          jenisAwal={jenisAwal}
           onDone={(tanggal) => {
             setFormOpen(false)
             // Pindah ke periode transaksi yang baru disimpan supaya langsung terlihat.
@@ -186,14 +412,44 @@ export function UangView({ items, today }: { items: Transaksi[]; today: string }
         />
       </Sheet>
 
+      <Sheet
+        open={dompetSheet !== null}
+        title={editDompet ? 'Ubah Dompet' : 'Tambah Dompet'}
+        onClose={() => setDompetSheet(null)}
+      >
+        <DompetForm
+          initial={editDompet}
+          alasanTerkunci={alasanTerkunci}
+          onDone={() => setDompetSheet(null)}
+          onAskDelete={() => {
+            setHapusDompet(editDompet)
+            setDompetSheet(null)
+          }}
+        />
+      </Sheet>
+
       <ConfirmSheet
         open={deleting !== null}
         title="Hapus transaksi?"
-        message={deleting ? `"${deleting.keterangan}" (${tanda(deleting)} ${rupiah(deleting.jumlah)}) akan dihapus permanen.` : ''}
+        message={deleting ? `"${baris(deleting).judul}" (${baris(deleting).jumlah}) akan dihapus permanen.` : ''}
         confirmLabel="Hapus"
         danger
         onClose={() => setDeleting(null)}
         onConfirm={() => deleting && track(deleteTransaksi(deleting.id), 'Dihapus', 'Menghapus...')}
+      />
+
+      <ConfirmSheet
+        open={hapusDompet !== null}
+        title="Hapus dompet?"
+        message={`Dompet "${hapusDompet?.nama ?? ''}" akan dihapus permanen.`}
+        confirmLabel="Hapus"
+        danger
+        onClose={() => setHapusDompet(null)}
+        onConfirm={async () => {
+          if (!hapusDompet) return
+          const r = await track(deleteDompet(hapusDompet.id), 'Dompet dihapus', 'Menghapus...')
+          if (r.ok) keKartu(0)
+        }}
       />
     </>
   )

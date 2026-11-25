@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { geser, labelPeriode, periode, periodeDari, ringkasan, tanggalGajian } from '../lib/uang'
+import { geser, labelPeriode, milikDompet, periode, periodeDari, ringkasan, tanggalGajian } from '../lib/uang'
 import type { Transaksi } from '../lib/types'
 
 describe('tanggalGajian', () => {
@@ -50,12 +50,14 @@ describe('geser dan label', () => {
 })
 
 describe('ringkasan', () => {
-  const t = (tanggal: string, jenis: 'masuk' | 'keluar', jumlah: number): Transaksi => ({
-    id: tanggal + jenis + jumlah,
+  const t = (tanggal: string, jenis: Transaksi['jenis'], jumlah: number, dompetId = 'A', tujuanId: string | null = null): Transaksi => ({
+    id: tanggal + jenis + jumlah + dompetId,
     tanggal,
     jenis,
     jumlah,
     keterangan: 'x',
+    dompetId,
+    tujuanId,
   })
   const data = [
     t('2026-10-25', 'masuk', 5_000_000), // periode lama
@@ -67,5 +69,45 @@ describe('ringkasan', () => {
   it('masuk dan keluar hanya untuk periode yang dipilih', () => {
     expect(ringkasan(data, periodeDari('2026-11-25'))).toEqual({ saldo: 9_750_000, masuk: 6_000_000, keluar: 250_000 })
     expect(ringkasan(data, periodeDari('2026-11-24'))).toEqual({ saldo: 9_750_000, masuk: 5_000_000, keluar: 1_000_000 })
+  })
+})
+
+describe('dompet dan pindah dana', () => {
+  const t = (tanggal: string, jenis: Transaksi['jenis'], jumlah: number, dompetId: string, tujuanId: string | null = null): Transaksi => ({
+    id: tanggal + jenis + jumlah + dompetId,
+    tanggal,
+    jenis,
+    jumlah,
+    keterangan: 'x',
+    dompetId,
+    tujuanId,
+  })
+  const p = periodeDari('2026-11-25')
+  const data = [
+    t('2026-11-25', 'masuk', 5_000_000, 'bulanan'), // gaji
+    t('2026-11-26', 'pindah', 1_000_000, 'bulanan', 'tabungan'),
+    t('2026-11-27', 'keluar', 200_000, 'tabungan'),
+    t('2026-11-28', 'pindah', 300_000, 'tabungan', 'bulanan'), // uang bulanan habis, ambil dari tabungan
+  ]
+
+  it('saldo tiap dompet mengikuti pindah dana', () => {
+    expect(ringkasan(data, p, 'bulanan').saldo).toBe(4_300_000) // 5jt - 1jt + 0,3jt
+    expect(ringkasan(data, p, 'tabungan').saldo).toBe(500_000) // 1jt - 0,2jt - 0,3jt
+  })
+  it('total semua dompet tidak berubah oleh pindah dana', () => {
+    expect(ringkasan(data).saldo).toBe(4_800_000) // 5jt - 0,2jt
+    expect(ringkasan(data, p, 'bulanan').saldo + ringkasan(data, p, 'tabungan').saldo).toBe(4_800_000)
+  })
+  it('pindah dana tidak dihitung sebagai uang masuk atau keluar', () => {
+    expect(ringkasan(data, p, 'bulanan')).toMatchObject({ masuk: 5_000_000, keluar: 0 })
+    expect(ringkasan(data, p, 'tabungan')).toMatchObject({ masuk: 0, keluar: 200_000 })
+    expect(ringkasan(data, p)).toMatchObject({ masuk: 5_000_000, keluar: 200_000 })
+  })
+  it('pindah dana muncul di riwayat dompet asal dan tujuan', () => {
+    const pindah = data[1]
+    expect(milikDompet(pindah, 'bulanan')).toBe(true)
+    expect(milikDompet(pindah, 'tabungan')).toBe(true)
+    expect(milikDompet(pindah, 'liburan')).toBe(false)
+    expect(milikDompet(pindah, null)).toBe(true)
   })
 })

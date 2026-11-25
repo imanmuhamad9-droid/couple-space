@@ -1,0 +1,41 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+import { must, run } from '@/lib/action'
+import { admin } from '@/lib/supabase-admin'
+
+const Nama = z.string().trim().min(1, 'Isi nama dompet').max(40, 'Nama dompet terlalu panjang')
+
+/** Tambah dompet baru (id kosong) atau ganti nama. */
+export async function saveDompet(input: { id?: string; nama: string }) {
+  return run(async () => {
+    const nama = Nama.parse(input.nama)
+    if (input.id) {
+      must(await admin().from('dompet').update({ nama }).eq('id', z.uuid().parse(input.id)))
+    } else {
+      const last = must(await admin().from('dompet').select('urut').order('urut', { ascending: false }).limit(1))
+      const urut = ((last.data?.[0]?.urut as number | undefined) ?? 0) + 1
+      must(await admin().from('dompet').insert({ nama, urut }))
+    }
+    revalidatePath('/', 'layout')
+  })
+}
+
+/** Hanya dompet tanpa transaksi (sebagai asal maupun tujuan), dan minimal satu dompet harus tersisa. */
+export async function deleteDompet(idRaw: string) {
+  return run(async () => {
+    const id = z.uuid().parse(idRaw)
+
+    const semua = must(await admin().from('dompet').select('id'))
+    if ((semua.data?.length ?? 0) <= 1) throw new Error('Minimal harus ada satu dompet')
+
+    const pakai = must(
+      await admin().from('transaksi').select('id').or(`dompet_id.eq.${id},dompet_tujuan_id.eq.${id}`).limit(1),
+    )
+    if ((pakai.data?.length ?? 0) > 0) throw new Error('Dompet ini sudah punya transaksi, jadi tidak bisa dihapus')
+
+    must(await admin().from('dompet').delete().eq('id', id))
+    revalidatePath('/', 'layout')
+  })
+}

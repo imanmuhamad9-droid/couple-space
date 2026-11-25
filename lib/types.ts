@@ -41,11 +41,18 @@ export type TempatRingkas = Pick<
 
 export type Result<T = void> = { ok: true; data: T } | { ok: false; error: string }
 
+export type Dompet = { id: string; nama: string; urut: number }
+
 export type Transaksi = {
   id: string
   tanggal: string // YYYY-MM-DD
-  jenis: 'masuk' | 'keluar'
+  /** `pindah` = pindah dana antar dompet: bukan uang masuk atau keluar. */
+  jenis: 'masuk' | 'keluar' | 'pindah'
   /** Rupiah, bilangan bulat positif. Tanda (+/-) ditentukan oleh `jenis`. */
   jumlah: number
   keterangan: string
+  /** Dompet tempat transaksi terjadi (untuk pindah dana: dompet asal). */
+  dompetId: string
+  /** Hanya untuk pindah dana: dompet tujuan. */
+  tujuanId: string | null
 }
