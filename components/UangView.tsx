@@ -6,9 +6,9 @@ import { deleteDompet, saveDompet, urutkanDompet } from '@/app/actions/dompet'
 import { deleteTransaksi } from '@/app/actions/transaksi'
 import { useHorizontalReorder } from '@/hooks/useHorizontalReorder'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
-import { formatTanggal, rupiah } from '@/lib/format'
+import { angka as rb, formatTanggal, kapitalAwal, rupiah } from '@/lib/format'
 import type { Dompet, Transaksi } from '@/lib/types'
-import { geser, jatahInfo, labelPeriode, milikDompet, periodeDari, ringkasan } from '@/lib/uang'
+import { bulananHarian, geser, jatahInfo, labelPeriode, liburanInfo, milikDompet, periodeDari, ringkasan, type Status } from '@/lib/uang'
 import { pindahUrut } from '@/lib/urut'
 import { useFeedback } from './Feedback'
 import { ConfirmSheet, Sheet } from './Sheet'
@@ -29,7 +29,6 @@ const WARNA = [
 
 const jarak = 8 // gap-2 antar kartu (px), dipakai untuk menghitung posisi geser
 
-const rb = (n: number) => new Intl.NumberFormat('id-ID').format(n)
 
 /** Isi sheet pengaturan dompet (muncul saat kartu dompet ditekan): nama, jatah per periode, hapus. */
 function DompetForm({
@@ -47,6 +46,8 @@ function DompetForm({
   const { track } = useFeedback()
   const [nama, setNama] = useState(initial?.nama ?? '')
   const [jatah, setJatah] = useState(initial?.jatah ? String(initial.jatah) : '')
+  const [hari, setHari] = useState(initial?.hari ? String(initial.hari) : '')
+  const jenis = initial?.jenis ?? null
   const [busy, setBusy] = useState(false)
 
   async function submit(e: FormEvent) {
@@ -54,26 +55,34 @@ function DompetForm({
     setBusy(true)
     const baru = jatah === '' ? null : Number(jatah)
     const berubah = baru !== (initial?.jatah ?? null) // jatah hanya dikirim jika berubah
-    const r = await track(saveDompet({ id: initial?.id, nama, ...(berubah ? { jatah: baru } : {}) }), 'Tersimpan')
+    const r = await track(
+      jenis === 'liburan'
+        ? saveDompet({ id: initial?.id, nama, jatah: baru, hari: Number(hari) })
+        : saveDompet({ id: initial?.id, nama, ...(berubah ? { jatah: baru } : {}) }),
+      'Tersimpan',
+    )
     setBusy(false)
     if (r.ok) onDone()
   }
 
   return (
     <form onSubmit={submit} className="space-y-3">
+      {!jenis && (
       <Field label="Nama dompet">
         <input
           required
           maxLength={40}
           value={nama}
-          onChange={(e) => setNama(e.target.value)}
+          onChange={(e) => setNama(kapitalAwal(e.target.value))}
           placeholder="Contoh: Dana darurat"
           className={inputCls}
         />
       </Field>
+      )}
       <div>
-        <Field label="Jatah per periode gajian (Rp, opsional)">
+        <Field label={jenis === 'liburan' ? 'Budget liburan (Rp)' : 'Jatah per periode gajian (Rp, opsional)'}>
           <input
+            required={jenis === 'liburan'}
             inputMode="numeric"
             autoComplete="off"
             value={jatah ? rb(Number(jatah)) : ''}
@@ -83,11 +92,31 @@ function DompetForm({
           />
         </Field>
         <p className="mt-1 text-xs text-muted">
-          Kosongkan kalau tidak perlu. Kalau diisi, kartu menampilkan terpakai, sisa jatah, dan batas pengeluaran per hari.
+          {jenis === 'bulanan'
+            ? 'Dibagi rata per hari selama periode gajian. Sisa hari ini tidak dibawa ke besok.'
+            : jenis === 'liburan'
+              ? 'Total uang untuk sekali liburan.'
+              : 'Kosongkan kalau tidak perlu. Kalau diisi, kartu menampilkan terpakai, sisa jatah, dan batas pengeluaran per hari.'}
         </p>
       </div>
+      {jenis === 'liburan' && (
+        <div>
+          <Field label="Lama liburan (hari)">
+            <input
+              required
+              inputMode="numeric"
+              autoComplete="off"
+              value={hari}
+              onChange={(e) => setHari(e.target.value.replace(/\D/g, '').slice(0, 3))}
+              placeholder="Contoh: 2"
+              className={inputCls}
+            />
+          </Field>
+          <p className="mt-1 text-xs text-muted">Sisa jajan hari ini dibawa ke hari berikutnya.</p>
+        </div>
+      )}
       <SubmitButton busy={busy}>{initial ? 'Simpan' : 'Tambah dompet'}</SubmitButton>
-      {initial && (
+      {initial && !jenis && (
         <>
           <button
             type="button"
@@ -214,8 +243,41 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
     setPage(0)
   }
 
+  /** Isi kartu per jenis dompet. Tabungan: tidak ada target, hanya saldo. */
+  function rincianKartu(d: Dompet): { persen: number; status: Status; l1: string; l2: string; l3?: string } | null {
+    if (d.jenis === 'tabungan' || !d.jatah) return null
+    if (d.jenis === 'liburan') {
+      if (!d.hari) return null
+      const r = liburanInfo(items, d.id, d.jatah, d.hari, today)
+      return {
+        persen: r.persen,
+        status: r.status,
+        l1: `Hari ke-${r.hariKe} dari ${d.hari} · ${rupiah(r.perHari)}/hari`,
+        l2: r.bolehHariIni >= 0 ? `Boleh dipakai ${rupiah(r.bolehHariIni)}` : `Lewat ${rupiah(-r.bolehHariIni)}`,
+        l3: `Terpakai ${rupiah(r.terpakai)} dari ${rupiah(d.jatah)}`,
+      }
+    }
+    const p = jatahInfo(items, per, d.id, d.jatah, today)
+    if (d.jenis === 'bulanan' && per.start === sekarang.start) {
+      const h = bulananHarian(items, per, d.id, d.jatah, today)
+      return {
+        persen: h.persen,
+        status: h.status,
+        l1: `Hari ini ${rupiah(h.terpakai)} dari ${rupiah(h.batas)}`,
+        l2: h.sisa >= 0 ? `Sisa hari ini ${rupiah(h.sisa)}` : `Lewat ${rupiah(-h.sisa)}`,
+        l3: `Periode: ${rupiah(p.terpakai)} dari ${rupiah(d.jatah)}`,
+      }
+    }
+    return {
+      persen: p.persen,
+      status: p.lewat ? 'lewat' : 'aman',
+      l1: `Terpakai ${rupiah(p.terpakai)} dari ${rupiah(d.jatah)}`,
+      l2: p.lewat ? `Lewat ${rupiah(-p.sisa)}` : `Sisa ${rupiah(p.sisa)}${p.perHari !== null ? ` · ${rupiah(p.perHari)}/hari` : ''}`,
+    }
+  }
+
   function bukaPengaturan(d: Dompet) {
-    if (!bolehKlik.current) return
+    if (!bolehKlik.current || d.jenis === 'tabungan') return
     setDompetSheet({ edit: d })
   }
 
@@ -291,14 +353,16 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
           }
 
           const saldo = ringkasan(items, undefined, k.id === SEMUA ? null : k.id).saldo
+          const rin = k.dompet ? rincianKartu(k.dompet) : null
           const warna =
             k.id === SEMUA
               ? 'from-slate-800 to-slate-600'
-              : saldo < 0
+              : saldo < 0 || rin?.status === 'lewat'
                 ? 'from-red-700 to-red-500'
-                : WARNA[i % WARNA.length]
+                : rin?.status === 'dekat'
+                  ? 'from-amber-600 to-orange-400'
+                  : WARNA[i % WARNA.length]
           const digeser = k.id === dragId
-          const info = k.dompet?.jatah ? jatahInfo(items, per, k.id, k.dompet.jatah, today) : null
 
           return (
             <section
@@ -330,26 +394,26 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
                 {rupiah(Math.abs(saldo))}
               </p>
               {!kompak &&
-                (info && k.dompet?.jatah ? (
+                (rin ? (
                   <div className="mt-2">
                     <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
-                      <div
-                        className={`h-full rounded-full ${info.lewat ? 'bg-red-200' : 'bg-white'}`}
-                        style={{ width: `${info.persen}%` }}
-                      />
+                      <div className="h-full rounded-full bg-white" style={{ width: `${rin.persen}%` }} />
                     </div>
-                    <p className="mt-1.5 truncate text-xs">
-                      Terpakai {rupiah(info.terpakai)} dari {rupiah(k.dompet.jatah)}
+                    <p className="mt-1.5 flex items-center gap-1.5 text-xs">
+                      <span className="truncate">{rin.l1}</span>
+                      {rin.status !== 'aman' && (
+                        <span className="shrink-0 rounded-full bg-white/25 px-1.5 py-px text-[10px] font-semibold">
+                          {rin.status === 'lewat' ? 'Lewat batas' : 'Hampir habis'}
+                        </span>
+                      )}
                     </p>
-                    <p className="truncate text-xs opacity-85">
-                      {info.lewat ? `Lewat ${rupiah(-info.sisa)}` : `Sisa ${rupiah(info.sisa)}`}
-                      {info.perHari !== null && ` · ${rupiah(info.perHari)}/hari`}
-                    </p>
+                    <p className="truncate text-xs font-medium">{rin.l2}</p>
+                    {rin.l3 && <p className="truncate text-xs opacity-75">{rin.l3}</p>}
                   </div>
                 ) : (
                   <p className="mt-1 text-xs opacity-75">{k.dompet ? 'Saldo dompet' : 'Total semua dompet'}</p>
                 ))}
-              {k.dompet && !kompak && <Pencil size={14} aria-hidden="true" className="absolute right-3.5 top-3.5 opacity-70" />}
+              {k.dompet && k.dompet.jenis !== 'tabungan' && !kompak && <Pencil size={14} aria-hidden="true" className="absolute right-3.5 top-3.5 opacity-70" />}
             </section>
           )
         })}

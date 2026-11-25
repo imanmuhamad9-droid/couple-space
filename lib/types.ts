@@ -47,6 +47,10 @@ export type Dompet = {
   urut: number
   /** Jatah per periode gajian (Rp); null = tidak ada jatah. */
   jatah: number | null
+  /** Dompet bawaan yang aturannya terkunci; null = dompet buatan sendiri. */
+  jenis: 'bulanan' | 'tabungan' | 'liburan' | null
+  /** Hanya liburan: lama liburan (hari). `jatah` = budget liburan. */
+  hari: number | null
 }
 
 export type Transaksi = {

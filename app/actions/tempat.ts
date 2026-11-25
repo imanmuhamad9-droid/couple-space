@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { must, run } from '@/lib/action'
 import { KATEGORI, KOTA } from '@/lib/constants'
+import { kapitalAwal } from '@/lib/format'
 import { resolveCoords } from '@/lib/resolve-coords'
 import { removeOwnerFiles } from '@/lib/storage'
 import { admin } from '@/lib/supabase-admin'
@@ -15,7 +16,7 @@ const time = z
 
 const SaveInput = z.object({
   id: z.uuid().optional(),
-  nama: z.string().trim().min(1, 'Isi nama tempat').max(150),
+  nama: z.string().trim().min(1, 'Isi nama tempat').max(150).transform(kapitalAwal),
   kategori: z.enum(KATEGORI, 'Pilih kategori'),
   kota: z.enum(KOTA, 'Pilih kota'),
   buka: time,

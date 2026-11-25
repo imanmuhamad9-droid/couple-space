@@ -113,3 +113,47 @@ export function jatahInfo(items: Transaksi[], p: Periode, dompetId: string, jata
     perHari: berjalan && sisa > 0 ? Math.floor(sisa / sisaHari) : null,
   }
 }
+
+export type Status = 'aman' | 'dekat' | 'lewat'
+
+/** Hampir habis = sudah 80% dari yang boleh dipakai. */
+function status(terpakai: number, boleh: number): Status {
+  if (terpakai > boleh) return 'lewat'
+  return boleh > 0 && terpakai >= boleh * 0.8 ? 'dekat' : 'aman'
+}
+
+/**
+ * Dompet bulanan: jatah periode dibagi rata per hari. Tiap hari dihitung sendiri,
+ * sisa hari ini TIDAK dibawa ke besok. Hanya untuk periode yang sedang berjalan.
+ */
+export function bulananHarian(items: Transaksi[], p: Periode, dompetId: string, jatah: number, today: string) {
+  const hariPeriode = selisihHari(p.start, p.end) + 1
+  const batas = Math.floor(jatah / hariPeriode)
+  const terpakai = ringkasan(items, { ...p, start: today, end: today }, dompetId).keluar
+  return { batas, terpakai, sisa: batas - terpakai, persen: batas > 0 ? Math.min(100, (terpakai / batas) * 100) : 100, status: status(terpakai, batas) }
+}
+
+/**
+ * Dompet liburan: budget untuk `hari` hari. Hari pertama = hari pertama ada pengeluaran dari dompet ini.
+ * Sisa tiap hari DIBAWA ke hari berikutnya: yang boleh dipakai sampai hari ini = budget/hari x hari ke-n.
+ */
+export function liburanInfo(items: Transaksi[], dompetId: string, budget: number, hari: number, today: string) {
+  let terpakai = 0
+  let awal: string | null = null
+  for (const t of items) {
+    if (t.jenis !== 'keluar' || t.dompetId !== dompetId) continue
+    terpakai += t.jumlah
+    if (!awal || t.tanggal < awal) awal = t.tanggal
+  }
+  const hariKe = awal ? Math.min(hari, Math.max(1, selisihHari(awal, today) + 1)) : 1
+  const bolehSampaiIni = Math.floor((budget * hariKe) / hari)
+  return {
+    terpakai,
+    hariKe,
+    perHari: Math.floor(budget / hari),
+    sisaTotal: budget - terpakai,
+    bolehHariIni: bolehSampaiIni - terpakai, // bisa negatif = sudah kelewat
+    persen: Math.min(100, (terpakai / budget) * 100),
+    status: status(terpakai, bolehSampaiIni),
+  }
+}

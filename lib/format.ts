@@ -49,9 +49,23 @@ export function formatTanggalSingkat(iso: string): string {
   }).format(asUtc(iso))
 }
 
+/** "50.000" (pemisah ribuan, tanpa "Rp"). */
+export function angka(n: number): string {
+  return new Intl.NumberFormat('id-ID').format(n)
+}
+
+/**
+ * Huruf pertama jadi kapital. Sisanya tidak disentuh, jadi "KOPI" tetap "KOPI".
+ * Link (http...) dibiarkan apa adanya.
+ */
+export function kapitalAwal(s: string): string {
+  if (!s || /^\s*https?:/i.test(s)) return s
+  return s.replace(/\p{L}/u, (c) => c.toUpperCase())
+}
+
 /** "Rp 50.000" */
 export function rupiah(n: number): string {
-  return `Rp ${new Intl.NumberFormat('id-ID').format(n)}`
+  return `Rp ${angka(n)}`
 }
 
 /** Tanggal dan menit-sejak-tengah-malam (zona Jakarta) untuk waktu `ms`. */

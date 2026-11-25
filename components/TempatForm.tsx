@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import { saveTempat } from '@/app/actions/tempat'
 import { useUpload } from '@/hooks/useUpload'
 import { KATEGORI, KOTA } from '@/lib/constants'
+import { kapitalAwal } from '@/lib/format'
 import type { Tempat } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { Field, inputCls, PickerField, SubmitButton } from './ui'
@@ -49,7 +50,7 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
   return (
     <form onSubmit={submit} className="space-y-3">
       <Field label="Nama tempat">
-        <input required maxLength={150} value={nama} onChange={(e) => setNama(e.target.value)} className={inputCls} />
+        <input required maxLength={150} value={nama} onChange={(e) => setNama(kapitalAwal(e.target.value))} className={inputCls} />
       </Field>
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
         <Field label="Kategori">

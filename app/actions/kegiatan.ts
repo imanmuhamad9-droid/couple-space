@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { must, run } from '@/lib/action'
+import { kapitalAwal } from '@/lib/format'
 import { clearOwnerFiles, removeOwnerFiles } from '@/lib/storage'
 import { admin } from '@/lib/supabase-admin'
 
@@ -12,8 +13,8 @@ const SaveInput = z.object({
   id: Id.optional(),
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Tanggal tidak valid'),
   jam: z.string().regex(/^\d{2}:\d{2}$/, 'Jam tidak valid'),
-  kegiatan: z.string().trim().min(1, 'Isi dulu mau ngapain').max(200, 'Kegiatan terlalu panjang'),
-  lokasi: z.string().trim().max(500, 'Lokasi terlalu panjang').default(''),
+  kegiatan: z.string().trim().min(1, 'Isi dulu mau ngapain').max(200, 'Kegiatan terlalu panjang').transform(kapitalAwal),
+  lokasi: z.string().trim().max(500, 'Lokasi terlalu panjang').transform(kapitalAwal).default(''),
   budget: z.coerce.number().int('Budget harus angka bulat').min(0).max(2_000_000_000).default(0),
   /** uuid = hubungkan ke tempat, null = putuskan, tidak dikirim = jangan diubah. */
   tempatId: Id.nullable().optional(),

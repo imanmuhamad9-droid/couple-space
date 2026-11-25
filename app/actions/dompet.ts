@@ -3,25 +3,38 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { must, run } from '@/lib/action'
+import { kapitalAwal } from '@/lib/format'
 import { admin } from '@/lib/supabase-admin'
 
-const Nama = z.string().trim().min(1, 'Isi nama dompet').max(40, 'Nama dompet terlalu panjang')
+const Nama = z.string().trim().min(1, 'Isi nama dompet').max(40, 'Nama dompet terlalu panjang').transform(kapitalAwal)
+const Hari = z.number().int('Jumlah hari harus angka bulat').min(1, 'Minimal 1 hari').max(365)
 const Jatah = z.number().int('Jatah harus angka bulat').min(1, 'Jatah harus lebih dari 0').max(100_000_000_000_000)
 
 /**
  * Tambah dompet baru (id kosong) atau ubah pengaturannya. `jatah`: angka = set, null = hapus jatah,
  * tidak dikirim = jangan diubah.
  */
-export async function saveDompet(input: { id?: string; nama: string; jatah?: number | null }) {
+export async function saveDompet(input: { id?: string; nama: string; jatah?: number | null; hari?: number | null }) {
   return run(async () => {
     const nama = Nama.parse(input.nama)
     const jatah = input.jatah === undefined ? undefined : input.jatah === null ? null : Jatah.parse(input.jatah)
+    const hari = input.hari === undefined || input.hari === null ? input.hari : Hari.parse(input.hari)
     if (input.id) {
+      const id = z.uuid().parse(input.id)
+      const ada = must(await admin().from('dompet').select('*').eq('id', id).limit(1))
+      const jenis = (ada.data?.[0]?.jenis as string | null | undefined) ?? null
+      if (jenis === 'tabungan') throw new Error('Dompet Tabungan tidak punya pengaturan')
+      if (jenis === 'liburan' && jatah === null) throw new Error('Isi budget liburan')
       must(
         await admin()
           .from('dompet')
-          .update({ nama, ...(jatah !== undefined ? { jatah } : {}) })
-          .eq('id', z.uuid().parse(input.id)),
+          .update({
+            // dompet bawaan: nama terkunci
+            ...(jenis ? {} : { nama }),
+            ...(jatah !== undefined ? { jatah } : {}),
+            ...(jenis === 'liburan' && hari !== undefined ? { hari } : {}),
+          })
+          .eq('id', id),
       )
     } else {
       const last = must(await admin().from('dompet').select('urut').order('urut', { ascending: false }).limit(1))
@@ -53,6 +66,9 @@ export async function urutkanDompet(ids: string[]) {
 export async function deleteDompet(idRaw: string) {
   return run(async () => {
     const id = z.uuid().parse(idRaw)
+
+    const ada = must(await admin().from('dompet').select('*').eq('id', id).limit(1))
+    if (ada.data?.[0]?.jenis) throw new Error('Dompet bawaan tidak bisa dihapus')
 
     const semua = must(await admin().from('dompet').select('id'))
     if ((semua.data?.length ?? 0) <= 1) throw new Error('Minimal harus ada satu dompet')

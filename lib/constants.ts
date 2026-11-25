@@ -65,7 +65,9 @@ export const KETERANGAN = {
   ],
   uang: [
     'Geser kartu ke samping untuk berpindah dompet. Kartu "Keseluruhan" (total semua dompet) ada di ujung, disusul kartu putih "+ Dompet" untuk menambah dompet.',
-    'Tekan sebuah kartu dompet untuk pengaturannya: ganti nama, jatah per periode gajian, atau hapus dompet. Kalau jatah diisi, kartu menampilkan terpakai, sisa, dan batas pengeluaran per hari.',
+    'Bulanan: jatah per periode gajian dibagi rata per hari. Kartu menampilkan batas hari ini dan sisanya; sisa hari ini tidak dibawa ke besok.',
+    'Liburan: isi budget dan lama liburan (tekan kartunya). Budget dibagi per hari, dan sisa jajan hari ini dibawa ke hari berikutnya. Hari ke-1 adalah hari pertama ada pengeluaran dari dompet Liburan. Kartu berubah kuning (hampir habis) atau merah (lewat batas).',
+    'Tabungan: hanya saldo, tanpa target. Tiga dompet bawaan ini terkunci (tidak bisa dihapus atau diganti nama). Dompet yang kamu tambah sendiri boleh punya jatah opsional dan bisa dihapus.',
     'Tekan lama kartu dompet lalu geser ke kiri atau kanan untuk mengubah urutannya.',
     'Saldo terus terakumulasi dan tidak di-reset saat ganti periode gajian.',
     'Pindah dana (pilih "Pindah" di form Tambah transaksi) memindahkan uang antar dompet. Total uangmu tidak berubah dan tidak dihitung sebagai uang masuk atau keluar.',

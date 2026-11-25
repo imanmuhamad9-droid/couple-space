@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react'
 import { saveKegiatan } from '@/app/actions/kegiatan'
+import { angka, kapitalAwal } from '@/lib/format'
 import type { Kegiatan, TempatRingkas } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { PlaceSuggest } from './PlaceSuggest'
@@ -67,7 +68,7 @@ export function KegiatanForm({
           required
           maxLength={200}
           value={kegiatan}
-          onChange={(e) => setKegiatan(e.target.value)}
+          onChange={(e) => setKegiatan(kapitalAwal(e.target.value))}
           placeholder="Contoh: Ngopi di Bandung"
           className={inputCls}
         />
@@ -86,9 +87,9 @@ export function KegiatanForm({
       <Field label="Budget (Rp, opsional)">
         <input
           inputMode="numeric"
-          pattern="[0-9]*"
-          value={budget}
-          onChange={(e) => setBudget(e.target.value.replace(/\D/g, ''))}
+          autoComplete="off"
+          value={budget ? angka(Number(budget)) : ''}
+          onChange={(e) => setBudget(e.target.value.replace(/\D/g, '').slice(0, 10))}
           placeholder="0"
           className={inputCls}
         />

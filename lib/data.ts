@@ -142,5 +142,7 @@ export async function listDompet(): Promise<Dompet[]> {
     nama: r.nama as string,
     urut: r.urut as number,
     jatah: r.jatah === null || r.jatah === undefined ? null : Number(r.jatah),
+    jenis: (['bulanan', 'tabungan', 'liburan'].includes(r.jenis) ? r.jenis : null) as Dompet['jenis'],
+    hari: r.hari === null || r.hari === undefined ? null : Number(r.hari),
   }))
 }

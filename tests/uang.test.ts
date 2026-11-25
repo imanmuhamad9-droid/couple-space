@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { geser, jatahInfo, labelPeriode, milikDompet, periode, periodeDari, ringkasan, tanggalGajian } from '../lib/uang'
+import { bulananHarian, geser, jatahInfo, liburanInfo, labelPeriode, milikDompet, periode, periodeDari, ringkasan, tanggalGajian } from '../lib/uang'
 import type { Transaksi } from '../lib/types'
 
 describe('tanggalGajian', () => {
@@ -156,5 +156,46 @@ describe('jatahInfo', () => {
     expect(r.sisa).toBe(-200_000)
     expect(r.persen).toBe(100)
     expect(r.perHari).toBeNull()
+  })
+})
+
+describe('bulananHarian & liburanInfo', () => {
+  const t = (tanggal: string, jumlah: number, dompetId = 'b'): Transaksi => ({
+    id: tanggal + jumlah + dompetId, tanggal, jenis: 'keluar', jumlah, keterangan: 'x', dompetId, tujuanId: null,
+  })
+  const p = periodeDari('2026-11-25') // 30 hari
+
+  it('bulanan: batas = jatah / hari periode, hanya pengeluaran hari ini, tanpa carry', () => {
+    const data = [t('2026-11-26', 90_000), t('2026-11-27', 30_000)]
+    const r = bulananHarian(data, p, 'b', 3_000_000, '2026-11-27')
+    expect(r.batas).toBe(100_000)
+    expect(r.terpakai).toBe(30_000)
+    expect(r.sisa).toBe(70_000) // 10rb sisa kemarin tidak ikut
+    expect(r.status).toBe('aman')
+  })
+  it('bulanan: status dekat dan lewat', () => {
+    expect(bulananHarian([t('2026-11-27', 85_000)], p, 'b', 3_000_000, '2026-11-27').status).toBe('dekat')
+    expect(bulananHarian([t('2026-11-27', 120_000)], p, 'b', 3_000_000, '2026-11-27').status).toBe('lewat')
+  })
+  it('liburan: sisa jajan dibawa ke hari berikutnya', () => {
+    // 1 jt untuk 2 hari: 500rb/hari. Hari 1 pakai 300rb -> hari 2 boleh 700rb.
+    const data = [t('2026-12-01', 300_000, 'l')]
+    expect(liburanInfo(data, 'l', 1_000_000, 2, '2026-12-01').bolehHariIni).toBe(200_000)
+    const h2 = liburanInfo(data, 'l', 1_000_000, 2, '2026-12-02')
+    expect(h2.hariKe).toBe(2)
+    expect(h2.bolehHariIni).toBe(700_000)
+    expect(h2.sisaTotal).toBe(700_000)
+  })
+  it('liburan: belum ada pengeluaran = hari ke-1; lewat hari tetap dibatasi budget', () => {
+    expect(liburanInfo([], 'l', 1_000_000, 2, '2026-12-05')).toMatchObject({ hariKe: 1, bolehHariIni: 500_000, status: 'aman' })
+    const r = liburanInfo([t('2026-12-01', 900_000, 'l')], 'l', 1_000_000, 2, '2026-12-09')
+    expect(r.hariKe).toBe(2)
+    expect(r.bolehHariIni).toBe(100_000)
+  })
+  it('liburan: lewat batas hari ini, dan hanya hitung dompet itu', () => {
+    const data = [t('2026-12-01', 600_000, 'l'), t('2026-12-01', 999_999, 'lain')]
+    const r = liburanInfo(data, 'l', 1_000_000, 2, '2026-12-01')
+    expect(r.terpakai).toBe(600_000)
+    expect(r.status).toBe('lewat')
   })
 })

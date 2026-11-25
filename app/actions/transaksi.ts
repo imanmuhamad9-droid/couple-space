@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { must, run } from '@/lib/action'
+import { kapitalAwal } from '@/lib/format'
 import { admin } from '@/lib/supabase-admin'
 
 const Input = z.object({
@@ -10,7 +11,7 @@ const Input = z.object({
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Tanggal tidak valid'),
   jenis: z.enum(['masuk', 'keluar', 'pindah'], 'Pilih jenis transaksi'),
   jumlah: z.coerce.number().int('Jumlah harus angka bulat').min(1, 'Isi jumlahnya').max(100_000_000_000_000),
-  keterangan: z.string().trim().max(200, 'Keterangan terlalu panjang').default(''),
+  keterangan: z.string().trim().max(200, 'Keterangan terlalu panjang').transform(kapitalAwal).default(''),
   dompetId: z.uuid('Pilih dompet'),
   /** Hanya untuk pindah dana. */
   tujuanId: z.uuid().nullable().optional(),

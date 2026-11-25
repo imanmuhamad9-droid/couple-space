@@ -2,13 +2,12 @@
 
 import { useState, type FormEvent } from 'react'
 import { saveTransaksi } from '@/app/actions/transaksi'
-import { rupiah } from '@/lib/format'
+import { angka as rb, kapitalAwal, rupiah } from '@/lib/format'
 import { sarankanKeterangan, type SaranKeterangan } from '@/lib/suggest'
 import type { Dompet, Transaksi } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { Field, inputCls, PickerField, SubmitButton } from './ui'
 
-const rb = (n: number) => new Intl.NumberFormat('id-ID').format(n)
 
 /** Dompet lain selain `id` (untuk tujuan pindah dana). */
 const lain = (dompet: Dompet[], id: string) => dompet.find((d) => d.id !== id)?.id ?? ''
@@ -136,7 +135,7 @@ export function TransaksiForm({
           required={jenis !== 'pindah'}
           maxLength={200}
           value={keterangan}
-          onChange={(e) => setKeterangan(e.target.value)}
+          onChange={(e) => setKeterangan(kapitalAwal(e.target.value))}
           placeholder={jenis === 'keluar' ? 'Contoh: Makan siang' : jenis === 'masuk' ? 'Contoh: Gaji' : 'Contoh: Uang bulanan habis'}
           className={inputCls}
         />
