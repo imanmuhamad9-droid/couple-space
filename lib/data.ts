@@ -133,9 +133,14 @@ export async function listTransaksi(): Promise<Transaksi[]> {
 export async function listDompet(): Promise<Dompet[]> {
   const res = await admin()
     .from('dompet')
-    .select('id, nama, urut')
+    .select('*')
     .order('urut', { ascending: true })
     .order('created_at', { ascending: true })
   if (res.error) throw new Error(res.error.message)
-  return (res.data ?? []) as Dompet[]
+  return (res.data ?? []).map((r) => ({
+    id: r.id as string,
+    nama: r.nama as string,
+    urut: r.urut as number,
+    jatah: r.jatah === null || r.jatah === undefined ? null : Number(r.jatah),
+  }))
 }

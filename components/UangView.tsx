@@ -8,7 +8,7 @@ import { useHorizontalReorder } from '@/hooks/useHorizontalReorder'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
 import { formatTanggal, rupiah } from '@/lib/format'
 import type { Dompet, Transaksi } from '@/lib/types'
-import { geser, labelPeriode, milikDompet, periodeDari, ringkasan } from '@/lib/uang'
+import { geser, jatahInfo, labelPeriode, milikDompet, periodeDari, ringkasan } from '@/lib/uang'
 import { pindahUrut } from '@/lib/urut'
 import { useFeedback } from './Feedback'
 import { ConfirmSheet, Sheet } from './Sheet'
@@ -29,7 +29,9 @@ const WARNA = [
 
 const jarak = 8 // gap-2 antar kartu (px), dipakai untuk menghitung posisi geser
 
-/** Isi sheet tambah/ganti nama dompet. */
+const rb = (n: number) => new Intl.NumberFormat('id-ID').format(n)
+
+/** Isi sheet pengaturan dompet (muncul saat kartu dompet ditekan): nama, jatah per periode, hapus. */
 function DompetForm({
   initial,
   onDone,
@@ -44,12 +46,15 @@ function DompetForm({
 }) {
   const { track } = useFeedback()
   const [nama, setNama] = useState(initial?.nama ?? '')
+  const [jatah, setJatah] = useState(initial?.jatah ? String(initial.jatah) : '')
   const [busy, setBusy] = useState(false)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
-    const r = await track(saveDompet({ id: initial?.id, nama }), 'Tersimpan')
+    const baru = jatah === '' ? null : Number(jatah)
+    const berubah = baru !== (initial?.jatah ?? null) // jatah hanya dikirim jika berubah
+    const r = await track(saveDompet({ id: initial?.id, nama, ...(berubah ? { jatah: baru } : {}) }), 'Tersimpan')
     setBusy(false)
     if (r.ok) onDone()
   }
@@ -66,7 +71,22 @@ function DompetForm({
           className={inputCls}
         />
       </Field>
-      <SubmitButton busy={busy}>{initial ? 'Simpan nama' : 'Tambah dompet'}</SubmitButton>
+      <div>
+        <Field label="Jatah per periode gajian (Rp, opsional)">
+          <input
+            inputMode="numeric"
+            autoComplete="off"
+            value={jatah ? rb(Number(jatah)) : ''}
+            onChange={(e) => setJatah(e.target.value.replace(/\D/g, '').slice(0, 14))}
+            placeholder="Contoh: 3.000.000"
+            className={inputCls}
+          />
+        </Field>
+        <p className="mt-1 text-xs text-muted">
+          Kosongkan kalau tidak perlu. Kalau diisi, kartu menampilkan terpakai, sisa jatah, dan batas pengeluaran per hari.
+        </p>
+      </div>
+      <SubmitButton busy={busy}>{initial ? 'Simpan' : 'Tambah dompet'}</SubmitButton>
       {initial && (
         <>
           <button
@@ -97,6 +117,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
   const [dompetSheet, setDompetSheet] = useState<{ edit: Dompet | null } | null>(null)
   const [hapusDompet, setHapusDompet] = useState<Dompet | null>(null)
   const rail = useRef<HTMLDivElement>(null)
+  const bolehKlik = useRef(true) // dimatikan sebentar setelah geseran: klik yang ikut muncul saat jari dilepas diabaikan
 
   // Urutan hasil geser ditampilkan langsung (optimistis) sampai data dari server tiba.
   const [lastDompet, setLastDompet] = useState(dompet)
@@ -152,6 +173,10 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
     rail,
     enabled: dompetUrut.length > 1,
     onDrop: async (id, posisi) => {
+      bolehKlik.current = false
+      setTimeout(() => {
+        bolehKlik.current = true
+      }, 400)
       const ids = dompetUrut.map((d) => d.id)
       const baru = pindahUrut(ids, id, posisi)
       const tujuan = baru.indexOf(id)
@@ -187,6 +212,11 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
   function ganti(delta: number) {
     setPer(geser(per, delta))
     setPage(0)
+  }
+
+  function bukaPengaturan(d: Dompet) {
+    if (!bolehKlik.current) return
+    setDompetSheet({ edit: d })
   }
 
   function bukaForm(t: Transaksi | null) {
@@ -268,33 +298,58 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
                 ? 'from-red-700 to-red-500'
                 : WARNA[i % WARNA.length]
           const digeser = k.id === dragId
+          const info = k.dompet?.jatah ? jatahInfo(items, per, k.id, k.dompet.jatah, today) : null
 
           return (
             <section
               key={k.id}
               data-wallet-id={k.dompet ? k.id : undefined}
               {...(k.dompet ? bind(k.id) : {})}
+              role={k.dompet ? 'button' : undefined}
+              tabIndex={k.dompet ? 0 : undefined}
+              aria-label={k.dompet ? `Pengaturan dompet ${k.dompet.nama}` : undefined}
+              onClick={k.dompet ? () => bukaPengaturan(k.dompet!) : undefined}
+              onKeyDown={
+                k.dompet
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        bukaPengaturan(k.dompet!)
+                      }
+                    }
+                  : undefined
+              }
               style={digeser ? { transform: `translateX(${dx}px) scale(1.05)` } : undefined}
               className={`relative ${lebarKartu} shrink-0 snap-center select-none rounded-2xl bg-gradient-to-br p-4 text-white [-webkit-touch-callout:none] ${warna} ${
                 digeser ? 'z-20 shadow-2xl' : 'shadow-md'
-              }`}
+              } ${k.dompet ? 'cursor-pointer' : ''}`}
             >
-              <p className="truncate text-sm opacity-85">{k.dompet ? k.dompet.nama : 'Keseluruhan'}</p>
+              <p className="truncate pr-6 text-sm opacity-85">{k.dompet ? k.dompet.nama : 'Keseluruhan'}</p>
               <p className={`mt-0.5 truncate font-bold tabular-nums ${kompak ? 'text-lg' : 'text-3xl'}`}>
                 {saldo < 0 ? '−' : ''}
                 {rupiah(Math.abs(saldo))}
               </p>
-              {!kompak && <p className="mt-1 text-xs opacity-75">{k.dompet ? 'Saldo dompet' : 'Total semua dompet'}</p>}
-              {k.dompet && !kompak && (
-                <button
-                  type="button"
-                  onClick={() => setDompetSheet({ edit: k.dompet })}
-                  aria-label={`Ubah dompet ${k.dompet.nama}`}
-                  className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-white/20 active:bg-white/30"
-                >
-                  <Pencil size={14} />
-                </button>
-              )}
+              {!kompak &&
+                (info && k.dompet?.jatah ? (
+                  <div className="mt-2">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
+                      <div
+                        className={`h-full rounded-full ${info.lewat ? 'bg-red-200' : 'bg-white'}`}
+                        style={{ width: `${info.persen}%` }}
+                      />
+                    </div>
+                    <p className="mt-1.5 truncate text-xs">
+                      Terpakai {rupiah(info.terpakai)} dari {rupiah(k.dompet.jatah)}
+                    </p>
+                    <p className="truncate text-xs opacity-85">
+                      {info.lewat ? `Lewat ${rupiah(-info.sisa)}` : `Sisa ${rupiah(info.sisa)}`}
+                      {info.perHari !== null && ` · ${rupiah(info.perHari)}/hari`}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs opacity-75">{k.dompet ? 'Saldo dompet' : 'Total semua dompet'}</p>
+                ))}
+              {k.dompet && !kompak && <Pencil size={14} aria-hidden="true" className="absolute right-3.5 top-3.5 opacity-70" />}
             </section>
           )
         })}
@@ -438,6 +493,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
           today={today}
           dompet={dompetUrut}
           dompetAwal={aktifId ?? dompetUrut[0]?.id ?? ''}
+          riwayat={items}
           onDone={(tanggal) => {
             setFormOpen(false)
             // Pindah ke periode transaksi yang baru disimpan supaya langsung terlihat.
@@ -449,7 +505,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
 
       <Sheet
         open={dompetSheet !== null}
-        title={editDompet ? 'Ubah Dompet' : 'Tambah Dompet'}
+        title={editDompet ? `Pengaturan ${editDompet.nama}` : 'Tambah Dompet'}
         onClose={() => setDompetSheet(null)}
       >
         <DompetForm

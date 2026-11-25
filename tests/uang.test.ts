@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { geser, labelPeriode, milikDompet, periode, periodeDari, ringkasan, tanggalGajian } from '../lib/uang'
+import { geser, jatahInfo, labelPeriode, milikDompet, periode, periodeDari, ringkasan, tanggalGajian } from '../lib/uang'
 import type { Transaksi } from '../lib/types'
 
 describe('tanggalGajian', () => {
@@ -109,5 +109,52 @@ describe('dompet dan pindah dana', () => {
     expect(milikDompet(pindah, 'tabungan')).toBe(true)
     expect(milikDompet(pindah, 'liburan')).toBe(false)
     expect(milikDompet(pindah, null)).toBe(true)
+  })
+})
+
+describe('jatahInfo', () => {
+  const t = (tanggal: string, jenis: Transaksi['jenis'], jumlah: number, tujuanId: string | null = null): Transaksi => ({
+    id: tanggal + jenis + jumlah,
+    tanggal,
+    jenis,
+    jumlah,
+    keterangan: 'x',
+    dompetId: 'bulanan',
+    tujuanId,
+  })
+  const p = periodeDari('2026-11-25') // 25 Nov - 24 Des 2026 (30 hari)
+  const data = [
+    t('2026-11-25', 'masuk', 5_000_000),
+    t('2026-11-26', 'keluar', 800_000),
+    t('2026-11-27', 'keluar', 400_000),
+    t('2026-11-28', 'pindah', 1_000_000, 'tabungan'), // bukan pengeluaran
+  ]
+
+  it('terpakai hanya uang keluar, tanpa pindah dana', () => {
+    const r = jatahInfo(data, p, 'bulanan', 3_000_000, '2026-11-28')
+    expect(r.terpakai).toBe(1_200_000)
+    expect(r.sisa).toBe(1_800_000)
+    expect(r.persen).toBe(40)
+    expect(r.lewat).toBe(false)
+  })
+  it('batas harian: sisa dibagi sisa hari termasuk hari ini', () => {
+    // 28 Nov sampai 24 Des = 27 hari; 1.800.000 / 27 = 66.666 -> 66.666
+    const r = jatahInfo(data, p, 'bulanan', 3_000_000, '2026-11-28')
+    expect(r.sisaHari).toBe(27)
+    expect(r.perHari).toBe(66_666)
+  })
+  it('hari terakhir periode: sisa hari = 1', () => {
+    expect(jatahInfo(data, p, 'bulanan', 3_000_000, '2026-12-24').sisaHari).toBe(1)
+  })
+  it('periode yang sudah lewat tidak punya batas harian', () => {
+    const lama = periodeDari('2026-10-24')
+    expect(jatahInfo(data, lama, 'bulanan', 3_000_000, '2026-11-28').perHari).toBeNull()
+  })
+  it('jatah terlewati: tandai lewat, bar penuh, tanpa batas harian', () => {
+    const r = jatahInfo(data, p, 'bulanan', 1_000_000, '2026-11-28')
+    expect(r.lewat).toBe(true)
+    expect(r.sisa).toBe(-200_000)
+    expect(r.persen).toBe(100)
+    expect(r.perHari).toBeNull()
   })
 })

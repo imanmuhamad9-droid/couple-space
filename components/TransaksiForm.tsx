@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from 'react'
 import { saveTransaksi } from '@/app/actions/transaksi'
+import { rupiah } from '@/lib/format'
+import { sarankanKeterangan, type SaranKeterangan } from '@/lib/suggest'
 import type { Dompet, Transaksi } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { Field, inputCls, PickerField, SubmitButton } from './ui'
@@ -21,12 +23,15 @@ export function TransaksiForm({
   today,
   dompet,
   dompetAwal,
+  riwayat,
   onDone,
 }: {
   initial: Transaksi | null
   today: string
   dompet: Dompet[]
   dompetAwal: string
+  /** Transaksi yang sudah ada (terbaru di atas), untuk saran isi otomatis keterangan. */
+  riwayat: Transaksi[]
   onDone: (tanggal: string) => void
 }) {
   const { track } = useFeedback()
@@ -47,6 +52,14 @@ export function TransaksiForm({
   function ubahTujuan(id: string) {
     setTujuanId(id)
     if (id === dompetId) setDompetId(lain(dompet, id))
+  }
+
+  // Saran dari catatan sebelumnya (hanya untuk transaksi baru): satu ketukan mengisi keterangan, jumlah, dan dompet.
+  const saran = !initial && jenis !== 'pindah' ? sarankanKeterangan(riwayat, jenis, keterangan) : []
+  function pilihSaran(s: SaranKeterangan) {
+    setKeterangan(s.keterangan)
+    if (!digits) setDigits(String(s.jumlah))
+    if (dompet.some((d) => d.id === s.dompetId)) setDompetId(s.dompetId)
   }
 
   async function submit(e: FormEvent) {
@@ -128,6 +141,28 @@ export function TransaksiForm({
           className={inputCls}
         />
       </Field>
+
+      {saran.length > 0 && (
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Pernah kamu catat</p>
+          <ul className="overflow-hidden rounded-xl border border-line bg-white">
+            {saran.map((s) => (
+              <li key={s.keterangan} className="border-b border-line last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => pilihSaran(s)}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left active:bg-gray-100"
+                >
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{s.keterangan}</span>
+                  <span className="shrink-0 text-xs text-muted">
+                    {rupiah(s.jumlah)} · {dompet.find((d) => d.id === s.dompetId)?.nama ?? ''}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <PickerField label="Tanggal" type="date" required value={tanggal} onChange={setTanggal} />
       <SubmitButton busy={busy}>{initial ? 'Simpan perubahan' : 'Simpan'}</SubmitButton>

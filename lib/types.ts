@@ -41,7 +41,13 @@ export type TempatRingkas = Pick<
 
 export type Result<T = void> = { ok: true; data: T } | { ok: false; error: string }
 
-export type Dompet = { id: string; nama: string; urut: number }
+export type Dompet = {
+  id: string
+  nama: string
+  urut: number
+  /** Jatah per periode gajian (Rp); null = tidak ada jatah. */
+  jatah: number | null
+}
 
 export type Transaksi = {
   id: string

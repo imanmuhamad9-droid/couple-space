@@ -88,3 +88,28 @@ export function ringkasan(items: Transaksi[], p?: Periode, dompetId: string | nu
   }
   return { saldo, masuk, keluar }
 }
+
+/** Selisih hari antara dua tanggal ISO (b - a). */
+export function selisihHari(a: string, b: string): number {
+  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000)
+}
+
+/**
+ * Jatah satu dompet pada periode `p`: terpakai = uang keluar dompet itu (pindah dana tidak dihitung).
+ * `perHari` (sisa jatah dibagi sisa hari, termasuk hari ini) hanya untuk periode yang sedang berjalan
+ * dan selama jatah belum habis.
+ */
+export function jatahInfo(items: Transaksi[], p: Periode, dompetId: string, jatah: number, today: string) {
+  const terpakai = ringkasan(items, p, dompetId).keluar
+  const sisa = jatah - terpakai
+  const berjalan = today >= p.start && today <= p.end
+  const sisaHari = berjalan ? selisihHari(today, p.end) + 1 : 0
+  return {
+    terpakai,
+    sisa,
+    lewat: sisa < 0,
+    persen: Math.min(100, (terpakai / jatah) * 100),
+    sisaHari,
+    perHari: berjalan && sisa > 0 ? Math.floor(sisa / sisaHari) : null,
+  }
+}

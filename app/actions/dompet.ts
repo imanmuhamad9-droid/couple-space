@@ -6,17 +6,27 @@ import { must, run } from '@/lib/action'
 import { admin } from '@/lib/supabase-admin'
 
 const Nama = z.string().trim().min(1, 'Isi nama dompet').max(40, 'Nama dompet terlalu panjang')
+const Jatah = z.number().int('Jatah harus angka bulat').min(1, 'Jatah harus lebih dari 0').max(100_000_000_000_000)
 
-/** Tambah dompet baru (id kosong) atau ganti nama. */
-export async function saveDompet(input: { id?: string; nama: string }) {
+/**
+ * Tambah dompet baru (id kosong) atau ubah pengaturannya. `jatah`: angka = set, null = hapus jatah,
+ * tidak dikirim = jangan diubah.
+ */
+export async function saveDompet(input: { id?: string; nama: string; jatah?: number | null }) {
   return run(async () => {
     const nama = Nama.parse(input.nama)
+    const jatah = input.jatah === undefined ? undefined : input.jatah === null ? null : Jatah.parse(input.jatah)
     if (input.id) {
-      must(await admin().from('dompet').update({ nama }).eq('id', z.uuid().parse(input.id)))
+      must(
+        await admin()
+          .from('dompet')
+          .update({ nama, ...(jatah !== undefined ? { jatah } : {}) })
+          .eq('id', z.uuid().parse(input.id)),
+      )
     } else {
       const last = must(await admin().from('dompet').select('urut').order('urut', { ascending: false }).limit(1))
       const urut = ((last.data?.[0]?.urut as number | undefined) ?? 0) + 1
-      must(await admin().from('dompet').insert({ nama, urut }))
+      must(await admin().from('dompet').insert({ nama, urut, ...(jatah ? { jatah } : {}) }))
     }
     revalidatePath('/', 'layout')
   })
