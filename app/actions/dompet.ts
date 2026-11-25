@@ -22,6 +22,23 @@ export async function saveDompet(input: { id?: string; nama: string }) {
   })
 }
 
+/** Simpan urutan dompet: `ids` berisi semua id dompet, dari kartu paling kiri. */
+export async function urutkanDompet(ids: string[]) {
+  return run(async () => {
+    const urutan = z.array(z.uuid()).min(1).max(50).parse(ids)
+    if (new Set(urutan).size !== urutan.length) throw new Error('Urutan dompet tidak valid')
+
+    const semua = must(await admin().from('dompet').select('id'))
+    const ada = new Set((semua.data ?? []).map((d) => d.id as string))
+    if (urutan.length !== ada.size || !urutan.every((id) => ada.has(id))) {
+      throw new Error('Daftar dompet sudah berubah. Muat ulang lalu coba lagi.')
+    }
+
+    await Promise.all(urutan.map(async (id, i) => must(await admin().from('dompet').update({ urut: i + 1 }).eq('id', id))))
+    revalidatePath('/', 'layout')
+  })
+}
+
 /** Hanya dompet tanpa transaksi (sebagai asal maupun tujuan), dan minimal satu dompet harus tersisa. */
 export async function deleteDompet(idRaw: string) {
   return run(async () => {

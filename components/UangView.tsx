@@ -1,30 +1,24 @@
 'use client'
 
-import {
-  ArrowDownLeft,
-  ArrowRightLeft,
-  ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
-  Pencil,
-  Plus,
-  Trash2,
-} from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type UIEvent } from 'react'
-import { deleteDompet, saveDompet } from '@/app/actions/dompet'
+import { deleteDompet, saveDompet, urutkanDompet } from '@/app/actions/dompet'
 import { deleteTransaksi } from '@/app/actions/transaksi'
+import { useHorizontalReorder } from '@/hooks/useHorizontalReorder'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
 import { formatTanggal, rupiah } from '@/lib/format'
 import type { Dompet, Transaksi } from '@/lib/types'
 import { geser, labelPeriode, milikDompet, periodeDari, ringkasan } from '@/lib/uang'
+import { pindahUrut } from '@/lib/urut'
 import { useFeedback } from './Feedback'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { TransaksiForm } from './TransaksiForm'
 import { Empty, Field, inputCls, PageHeader, Pagination, SubmitButton } from './ui'
 
 const SEMUA = 'semua'
+const TAMBAH = 'tambah'
 
-// Warna kartu per dompet (urut). Kartu "Keseluruhan" sengaja gelap dan netral.
+// Warna kartu per dompet (mengikuti urutan kartu). Kartu "Keseluruhan" sengaja gelap dan netral.
 const WARNA = [
   'from-blue-700 to-sky-500',
   'from-emerald-700 to-emerald-500',
@@ -98,24 +92,51 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
   const [idx, setIdx] = useState(0) // kartu yang sedang terlihat; 0 = dompet pertama (Bulanan)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Transaksi | null>(null)
-  const [jenisAwal, setJenisAwal] = useState<Transaksi['jenis']>('keluar')
   const [selected, setSelected] = useState<Transaksi | null>(null)
   const [deleting, setDeleting] = useState<Transaksi | null>(null)
   const [dompetSheet, setDompetSheet] = useState<{ edit: Dompet | null } | null>(null)
   const [hapusDompet, setHapusDompet] = useState<Dompet | null>(null)
   const rail = useRef<HTMLDivElement>(null)
 
-  const nama = useMemo(() => new Map(dompet.map((d) => [d.id, d.nama])), [dompet])
-
-  // Kartu: semua dompet, lalu "Keseluruhan" paling belakang (disembunyikan di ujung geseran).
-  const kartu = useMemo(
-    () => [...dompet.map((d) => ({ id: d.id, dompet: d })), { id: SEMUA, dompet: null as Dompet | null }],
-    [dompet],
+  // Urutan hasil geser ditampilkan langsung (optimistis) sampai data dari server tiba.
+  const [lastDompet, setLastDompet] = useState(dompet)
+  const [urutLokal, setUrutLokal] = useState<string[] | null>(null)
+  if (dompet !== lastDompet) {
+    setLastDompet(dompet)
+    setUrutLokal(null)
+  }
+  const dompetUrut = useMemo(
+    () => (urutLokal ? [...dompet].sort((a, b) => urutLokal.indexOf(a.id) - urutLokal.indexOf(b.id)) : dompet),
+    [dompet, urutLokal],
   )
-  const aktif = kartu[Math.min(idx, kartu.length - 1)]
+
+  const nama = useMemo(() => new Map(dompetUrut.map((d) => [d.id, d.nama])), [dompetUrut])
+
+  // Kartu: semua dompet, lalu "Keseluruhan" (disembunyikan di ujung), lalu kartu putih "+ Dompet" paling pojok.
+  const kartu = useMemo(
+    () => [
+      ...dompetUrut.map((d) => ({ id: d.id, dompet: d as Dompet | null })),
+      { id: SEMUA, dompet: null },
+      { id: TAMBAH, dompet: null },
+    ],
+    [dompetUrut],
+  )
+  // Kartu "+ Dompet" bukan data: di sana tampilan di bawah tetap mengikuti "Keseluruhan".
+  const nyata = kartu.filter((k) => k.id !== TAMBAH)
+  const aktif = nyata[Math.min(idx, nyata.length - 1)]
   const aktifId = aktif.id === SEMUA ? null : aktif.id
 
-  // Dompet baru muncul di sebelum "Keseluruhan": geser ke sana.
+  function posisiKartu(i: number) {
+    const el = rail.current
+    const first = el?.firstElementChild as HTMLElement | null
+    return el && first ? { el, left: i * (first.offsetWidth + jarak) } : null
+  }
+  function keKartu(i: number) {
+    const p = posisiKartu(i)
+    if (p) p.el.scrollTo({ left: p.left, behavior: 'smooth' })
+  }
+
+  // Dompet baru muncul setelah dompet terakhir: geser ke sana.
   const prevLen = useRef(dompet.length)
   useEffect(() => {
     if (dompet.length > prevLen.current) {
@@ -126,16 +147,28 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
     prevLen.current = dompet.length
   }, [dompet.length])
 
+  // Tekan lama kartu dompet lalu geser kiri/kanan untuk mengubah urutan.
+  const { dragId, dx, barX, bind } = useHorizontalReorder({
+    rail,
+    enabled: dompetUrut.length > 1,
+    onDrop: async (id, posisi) => {
+      const ids = dompetUrut.map((d) => d.id)
+      const baru = pindahUrut(ids, id, posisi)
+      const tujuan = baru.indexOf(id)
+      setTimeout(() => keKartu(tujuan), 60) // kartu kembali ke ukuran normal, lalu tampilkan kartu yang dipindah
+      if (baru.join() === ids.join()) return
+      setUrutLokal(baru)
+      const r = await track(urutkanDompet(baru), undefined, 'Menyimpan urutan...')
+      if (!r.ok) setUrutLokal(null)
+    },
+  })
+  const kompak = dragId !== null
+
   function onScroll(e: UIEvent<HTMLDivElement>) {
+    if (kompak) return
     const el = e.currentTarget
     const first = el.firstElementChild as HTMLElement | null
     if (first) setIdx(Math.round(el.scrollLeft / (first.offsetWidth + jarak)))
-  }
-
-  function keKartu(i: number) {
-    const el = rail.current
-    const first = el?.firstElementChild as HTMLElement | null
-    if (el && first) el.scrollTo({ left: i * (first.offsetWidth + jarak), behavior: 'smooth' })
   }
 
   // items sudah terurut terbaru di atas, jadi yang terakhir adalah yang tertua.
@@ -144,10 +177,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
   const bisaMaju = per.start < sekarang.start
 
   const { masuk, keluar } = ringkasan(items, per, aktifId)
-  const daftar = useMemo(
-    () => items.filter((t) => milikDompet(t, aktifId) && t.tanggal >= per.start && t.tanggal <= per.end),
-    [items, per, aktifId],
-  )
+  const daftar = items.filter((t) => milikDompet(t, aktifId) && t.tanggal >= per.start && t.tanggal <= per.end)
 
   const pages = Math.max(1, Math.ceil(daftar.length / ITEM_PER_HALAMAN))
   const cur = Math.min(page, pages - 1)
@@ -159,9 +189,8 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
     setPage(0)
   }
 
-  function bukaForm(t: Transaksi | null, jenis: Transaksi['jenis'] = 'keluar') {
+  function bukaForm(t: Transaksi | null) {
     setEditing(t)
-    setJenisAwal(jenis)
     setFormOpen(true)
   }
 
@@ -203,18 +232,34 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
           : null
 
   const detail = selected ? baris(selected) : null
+  const lebarKartu = kompak ? 'w-[42%]' : 'w-[86%]'
 
   return (
     <>
       <PageHeader title="Uang" info="uang" />
 
-      {/* Kartu dompet: geser ke samping. "Keseluruhan" ada paling belakang. */}
+      {/* Kartu dompet: geser ke samping. Tekan lama kartu dompet lalu geser untuk mengubah urutan. */}
       <div
         ref={rail}
         onScroll={onScroll}
-        className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-[7%] pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={`relative flex gap-2 overflow-x-auto px-[7%] pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          kompak ? '' : 'snap-x snap-mandatory'
+        }`}
       >
         {kartu.map((k, i) => {
+          if (k.id === TAMBAH) {
+            return (
+              <button
+                key={k.id}
+                type="button"
+                onClick={() => setDompetSheet({ edit: null })}
+                className={`${lebarKartu} grid shrink-0 snap-center place-items-center rounded-2xl bg-white text-base font-semibold text-upload shadow-sm active:bg-gray-50`}
+              >
+                + Dompet
+              </button>
+            )
+          }
+
           const saldo = ringkasan(items, undefined, k.id === SEMUA ? null : k.id).saldo
           const warna =
             k.id === SEMUA
@@ -222,18 +267,25 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
               : saldo < 0
                 ? 'from-red-700 to-red-500'
                 : WARNA[i % WARNA.length]
+          const digeser = k.id === dragId
+
           return (
             <section
               key={k.id}
-              className={`relative w-[86%] shrink-0 snap-center rounded-2xl bg-gradient-to-br p-4 text-white shadow-md ${warna}`}
+              data-wallet-id={k.dompet ? k.id : undefined}
+              {...(k.dompet ? bind(k.id) : {})}
+              style={digeser ? { transform: `translateX(${dx}px) scale(1.05)` } : undefined}
+              className={`relative ${lebarKartu} shrink-0 snap-center select-none rounded-2xl bg-gradient-to-br p-4 text-white [-webkit-touch-callout:none] ${warna} ${
+                digeser ? 'z-20 shadow-2xl' : 'shadow-md'
+              }`}
             >
-              <p className="text-sm opacity-85">{k.dompet ? k.dompet.nama : 'Keseluruhan'}</p>
-              <p className="mt-0.5 text-3xl font-bold tabular-nums">
+              <p className="truncate text-sm opacity-85">{k.dompet ? k.dompet.nama : 'Keseluruhan'}</p>
+              <p className={`mt-0.5 truncate font-bold tabular-nums ${kompak ? 'text-lg' : 'text-3xl'}`}>
                 {saldo < 0 ? '−' : ''}
                 {rupiah(Math.abs(saldo))}
               </p>
-              <p className="mt-1 text-xs opacity-75">{k.dompet ? 'Saldo dompet' : 'Total semua dompet'}</p>
-              {k.dompet && (
+              {!kompak && <p className="mt-1 text-xs opacity-75">{k.dompet ? 'Saldo dompet' : 'Total semua dompet'}</p>}
+              {k.dompet && !kompak && (
                 <button
                   type="button"
                   onClick={() => setDompetSheet({ edit: k.dompet })}
@@ -246,26 +298,21 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
             </section>
           )
         })}
+        {barX !== null && (
+          <div className="pointer-events-none absolute bottom-1 top-0 z-30 w-1 rounded-full bg-upload" style={{ left: barX }} />
+        )}
       </div>
 
-      <div className="relative mt-2 flex items-center justify-center gap-1.5">
+      <div className="mt-2 flex items-center justify-center gap-1.5">
         {kartu.map((k, i) => (
           <button
             key={k.id}
             type="button"
             onClick={() => keKartu(i)}
-            aria-label={k.dompet ? `Dompet ${k.dompet.nama}` : 'Keseluruhan'}
+            aria-label={k.id === TAMBAH ? 'Tambah dompet' : k.dompet ? `Dompet ${k.dompet.nama}` : 'Keseluruhan'}
             className={`h-1.5 rounded-full transition-all ${i === Math.min(idx, kartu.length - 1) ? 'w-4 bg-upload' : 'w-1.5 bg-gray-300'}`}
           />
         ))}
-        <button
-          type="button"
-          onClick={() => setDompetSheet({ edit: null })}
-          aria-label="Tambah dompet"
-          className="absolute right-4 flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-muted shadow-sm"
-        >
-          <Plus size={12} /> Dompet
-        </button>
       </div>
 
       <div className="mx-3 mb-2 mt-3 flex items-center justify-between">
@@ -296,24 +343,13 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
         </div>
       </div>
 
-      <div className="mx-3 mt-3 grid grid-cols-[1fr_auto] gap-2">
-        <button
-          type="button"
-          onClick={() => bukaForm(null)}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-upload font-semibold text-white active:scale-[0.99]"
-        >
-          <Plus size={20} /> Tambah transaksi
-        </button>
-        <button
-          type="button"
-          onClick={() => bukaForm(null, 'pindah')}
-          disabled={dompet.length < 2}
-          aria-label="Pindah dana antar dompet"
-          className="flex h-12 items-center justify-center gap-1.5 rounded-xl bg-white px-4 font-semibold text-upload shadow-sm active:scale-[0.99] disabled:opacity-40"
-        >
-          <ArrowRightLeft size={18} /> Pindah
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => bukaForm(null)}
+        className="mx-3 mt-3 flex h-12 w-[calc(100%-1.5rem)] items-center justify-center gap-2 rounded-xl bg-upload font-semibold text-white active:scale-[0.99]"
+      >
+        <Plus size={20} /> Tambah transaksi
+      </button>
 
       <h2 className="mx-4 mb-1 mt-5 text-xs font-semibold text-muted">{judulRiwayat}</h2>
       {daftar.length === 0 ? (
@@ -400,9 +436,8 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
         <TransaksiForm
           initial={editing}
           today={today}
-          dompet={dompet}
-          dompetAwal={aktifId ?? dompet[0]?.id ?? ''}
-          jenisAwal={jenisAwal}
+          dompet={dompetUrut}
+          dompetAwal={aktifId ?? dompetUrut[0]?.id ?? ''}
           onDone={(tanggal) => {
             setFormOpen(false)
             // Pindah ke periode transaksi yang baru disimpan supaya langsung terlihat.

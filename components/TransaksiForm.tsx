@@ -13,7 +13,7 @@ const lain = (dompet: Dompet[], id: string) => dompet.find((d) => d.id !== id)?.
 
 /**
  * Isi sheet tambah/edit transaksi. Di-mount baru tiap sheet dibuka.
- * `dompetAwal` = dompet bawaan untuk transaksi baru; `jenisAwal` = jenis bawaan (mis. "pindah" dari tombol Pindah dana).
+ * `dompetAwal` = dompet bawaan untuk transaksi baru. Jenis (keluar/masuk/pindah) dipilih di dalam form.
  * `onDone` menerima tanggalnya.
  */
 export function TransaksiForm({
@@ -21,18 +21,16 @@ export function TransaksiForm({
   today,
   dompet,
   dompetAwal,
-  jenisAwal = 'keluar',
   onDone,
 }: {
   initial: Transaksi | null
   today: string
   dompet: Dompet[]
   dompetAwal: string
-  jenisAwal?: Transaksi['jenis']
   onDone: (tanggal: string) => void
 }) {
   const { track } = useFeedback()
-  const [jenis, setJenis] = useState<Transaksi['jenis']>(initial?.jenis ?? jenisAwal)
+  const [jenis, setJenis] = useState<Transaksi['jenis']>(initial?.jenis ?? 'keluar')
   const [dompetId, setDompetId] = useState(initial?.dompetId ?? dompetAwal)
   const [tujuanId, setTujuanId] = useState(initial?.tujuanId ?? lain(dompet, initial?.dompetId ?? dompetAwal))
   const [digits, setDigits] = useState(initial ? String(initial.jumlah) : '')

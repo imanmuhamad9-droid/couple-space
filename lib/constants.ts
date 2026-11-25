@@ -64,9 +64,10 @@ export const KETERANGAN = {
     'Tekan foto untuk melihat semua fotonya dan menggeser ke samping.',
   ],
   uang: [
-    'Geser kartu ke samping untuk berpindah dompet: Bulanan, Tabungan, Liburan. Kartu "Keseluruhan" (total semua dompet) ada paling belakang.',
+    'Geser kartu ke samping untuk berpindah dompet. Kartu "Keseluruhan" (total semua dompet) ada di ujung, disusul kartu putih "+ Dompet" untuk menambah dompet.',
+    'Tekan lama sebuah kartu dompet lalu geser ke kiri atau kanan untuk mengubah urutannya.',
     'Saldo terus terakumulasi dan tidak di-reset saat ganti periode gajian.',
-    '"Pindah dana" memindahkan uang antar dompet, misalnya dari Tabungan ke Bulanan. Total uangmu tidak berubah dan tidak dihitung sebagai uang masuk atau keluar.',
+    'Pindah dana (pilih "Pindah" di form Tambah transaksi) memindahkan uang antar dompet. Total uangmu tidak berubah dan tidak dihitung sebagai uang masuk atau keluar.',
     'Uang masuk dan keluar dihitung per periode gajian: dari gajian sampai sehari sebelum gajian berikutnya. Gajian tanggal 25; jika jatuh di Sabtu atau Minggu, maju ke Jumat sebelumnya (24 atau 23). Hari libur nasional tidak dihitung.',
     'Tekan panah di atas untuk melihat periode lain. Tekan satu transaksi untuk edit atau hapus. Tekan pensil di kartu untuk mengganti nama dompet.',
   ],
