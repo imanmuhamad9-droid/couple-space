@@ -388,7 +388,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
                 digeser ? 'z-20 shadow-2xl' : 'shadow-md'
               } ${k.dompet ? 'cursor-pointer' : ''}`}
             >
-              <p className="truncate pr-6 text-sm opacity-85">{k.dompet ? k.dompet.nama : 'Keseluruhan'}</p>
+              <p className="truncate pr-24 text-sm opacity-85">{k.dompet ? k.dompet.nama : 'Keseluruhan'}</p>
               <p className={`mt-0.5 truncate font-bold tabular-nums ${kompak ? 'text-lg' : 'text-3xl'}`}>
                 {saldo < 0 ? '−' : ''}
                 {rupiah(Math.abs(saldo))}
@@ -399,21 +399,18 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
                     <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
                       <div className="h-full rounded-full bg-white" style={{ width: `${rin.persen}%` }} />
                     </div>
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs">
-                      <span className="truncate">{rin.l1}</span>
-                      {rin.status !== 'aman' && (
-                        <span className="shrink-0 rounded-full bg-white/25 px-1.5 py-px text-[10px] font-semibold">
-                          {rin.status === 'lewat' ? 'Lewat batas' : 'Hampir habis'}
-                        </span>
-                      )}
-                    </p>
-                    <p className="truncate text-xs font-medium">{rin.l2}</p>
-                    {rin.l3 && <p className="truncate text-xs opacity-75">{rin.l3}</p>}
+                    <p className="mt-1.5 text-xs">{rin.l1}</p>
+                    <p className="text-xs font-medium">{rin.l2}</p>
+                    {rin.l3 && <p className="text-xs opacity-75">{rin.l3}</p>}
                   </div>
                 ) : (
                   <p className="mt-1 text-xs opacity-75">{k.dompet ? 'Saldo dompet' : 'Total semua dompet'}</p>
                 ))}
-              {k.dompet && k.dompet.jenis !== 'tabungan' && !kompak && <Pencil size={14} aria-hidden="true" className="absolute right-3.5 top-3.5 opacity-70" />}
+              {rin && rin.status !== 'aman' && !kompak && (
+                <span className="absolute right-3.5 top-3.5 rounded-full bg-white/25 px-2 py-0.5 text-[11px] font-semibold">
+                  {rin.status === 'lewat' ? 'Lewat batas' : 'Hampir habis'}
+                </span>
+              )}
             </section>
           )
         })}
