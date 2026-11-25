@@ -63,4 +63,10 @@ export const KETERANGAN = {
     'Jumlah kunjungan dihitung otomatis dari kegiatan terlaksana di Histori yang tempatnya kamu pilih dari rekomendasi.',
     'Tekan foto untuk melihat semua fotonya dan menggeser ke samping.',
   ],
+  uang: [
+    'Uang kamu = semua uang masuk dikurangi semua uang keluar.',
+    'Masuk dan keluar dihitung per periode gajian: dari gajian sampai sehari sebelum gajian berikutnya. Gajian tanggal 25; jika jatuh di Sabtu atau Minggu, maju ke Jumat sebelumnya (24 atau 23). Hari libur nasional tidak dihitung.',
+    'Tekan panah di atas untuk melihat periode lain. Tekan satu transaksi untuk edit atau hapus.',
+    'Kalau kamu sudah punya uang sekarang, catat sebagai uang masuk pertama (misalnya "Saldo awal").',
+  ],
 } as const

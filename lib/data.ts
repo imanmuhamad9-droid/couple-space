@@ -2,7 +2,7 @@
 import { FOTO_BUCKET, FOTO_URL_TTL } from './constants'
 import { hhmm } from './format'
 import { admin } from './supabase-admin'
-import type { FotoItem, Kegiatan, Status, Tempat, TempatRingkas } from './types'
+import type { FotoItem, Kegiatan, Status, Tempat, TempatRingkas, Transaksi } from './types'
 
 type FotoRow = { id: string; storage_path: string; created_at: string; mime_type?: string; nama_file?: string | null }
 
@@ -108,5 +108,22 @@ export async function listTempatRingkas(): Promise<TempatRingkas[]> {
     lat: r.lat,
     lng: r.lng,
     kunjungan: kunjungan.get(r.id) ?? 0,
+  }))
+}
+
+/** Semua transaksi, terbaru di atas. Datanya kecil, jadi saldo dan periode dihitung di klien. */
+export async function listTransaksi(): Promise<Transaksi[]> {
+  const res = await admin()
+    .from('transaksi')
+    .select('id, tanggal, jenis, jumlah, keterangan')
+    .order('tanggal', { ascending: false })
+    .order('created_at', { ascending: false })
+  if (res.error) throw new Error(res.error.message)
+  return (res.data ?? []).map((r) => ({
+    id: r.id,
+    tanggal: r.tanggal,
+    jenis: r.jenis as Transaksi['jenis'],
+    jumlah: Number(r.jumlah),
+    keterangan: r.keterangan,
   }))
 }

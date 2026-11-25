@@ -40,3 +40,12 @@ export type TempatRingkas = Pick<
 >
 
 export type Result<T = void> = { ok: true; data: T } | { ok: false; error: string }
+
+export type Transaksi = {
+  id: string
+  tanggal: string // YYYY-MM-DD
+  jenis: 'masuk' | 'keluar'
+  /** Rupiah, bilangan bulat positif. Tanda (+/-) ditentukan oleh `jenis`. */
+  jumlah: number
+  keterangan: string
+}
