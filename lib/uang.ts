@@ -157,3 +157,21 @@ export function liburanInfo(items: Transaksi[], dompetId: string, budget: number
     status: status(terpakai, bolehSampaiIni),
   }
 }
+
+/** Total uang masuk atau keluar per hari selama `n` hari sampai `today` (pindah dana tidak dihitung). */
+export function totalHarian(
+  items: Transaksi[],
+  jenis: 'masuk' | 'keluar',
+  dompetId: string | null,
+  today: string,
+  n = 7,
+) {
+  return Array.from({ length: n }, (_, i) => {
+    const tanggal = addDays(today, i - n + 1)
+    const jumlah = items.reduce(
+      (s, t) => (t.tanggal === tanggal && t.jenis === jenis && (dompetId === null || t.dompetId === dompetId) ? s + t.jumlah : s),
+      0,
+    )
+    return { tanggal, jumlah }
+  })
+}

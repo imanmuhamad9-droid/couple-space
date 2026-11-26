@@ -73,6 +73,7 @@ export const KETERANGAN = {
     'Pindah dana (pilih "Pindah" di form Tambah transaksi) memindahkan uang antar dompet. Total uangmu tidak berubah dan tidak dihitung sebagai uang masuk atau keluar.',
     'Uang masuk dan keluar dihitung per periode gajian: dari gajian sampai sehari sebelum gajian berikutnya. Gajian tanggal 25; jika jatuh di Sabtu atau Minggu, maju ke Jumat sebelumnya (24 atau 23). Hari libur nasional tidak dihitung.',
     'Saat mengetik keterangan transaksi baru, muncul saran dari yang pernah kamu catat. Tekan satu saran untuk mengisi keterangan, jumlah, dan dompetnya.',
+    'Tekan kartu "Uang masuk" atau "Uang keluar" untuk diagram 7 hari terakhir dompet yang sedang dilihat.',
     'Tekan panah di atas untuk melihat periode lain. Tekan satu transaksi untuk edit atau hapus.',
   ],
   gantian: [

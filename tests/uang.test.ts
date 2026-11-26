@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bulananHarian, geser, jatahInfo, liburanInfo, labelPeriode, milikDompet, periode, periodeDari, ringkasan, tanggalGajian } from '../lib/uang'
+import { bulananHarian, geser, jatahInfo, liburanInfo, totalHarian, labelPeriode, milikDompet, periode, periodeDari, ringkasan, tanggalGajian } from '../lib/uang'
 import type { Transaksi } from '../lib/types'
 
 describe('tanggalGajian', () => {
@@ -198,4 +198,24 @@ describe('bulananHarian & liburanInfo', () => {
     expect(r.terpakai).toBe(600_000)
     expect(r.status).toBe('lewat')
   })
+})
+
+describe('totalHarian', () => {
+  const t = (tanggal: string, jenis: Transaksi['jenis'], jumlah: number, dompetId = 'a'): Transaksi => ({
+    id: tanggal + jenis + jumlah, tanggal, jenis, jumlah, keterangan: 'x', dompetId, tujuanId: null,
+  })
+  const data = [
+    t('2026-11-26', 'keluar', 10_000),
+    t('2026-11-26', 'keluar', 5_000, 'b'),
+    t('2026-11-20', 'keluar', 7_000),
+    t('2026-11-19', 'keluar', 99_000), // di luar 7 hari
+    t('2026-11-26', 'pindah', 50_000),
+  ]
+  it('7 hari sampai hari ini, terlama dulu, tanpa pindah dana', () => {
+    const r = totalHarian(data, 'keluar', null, '2026-11-26')
+    expect(r).toHaveLength(7)
+    expect(r[0]).toEqual({ tanggal: '2026-11-20', jumlah: 7_000 })
+    expect(r[6]).toEqual({ tanggal: '2026-11-26', jumlah: 15_000 })
+  })
+  it('per dompet', () => expect(totalHarian(data, 'keluar', 'b', '2026-11-26')[6].jumlah).toBe(5_000))
 })

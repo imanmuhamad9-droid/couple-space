@@ -9,9 +9,10 @@ import { useHorizontalReorder } from '@/hooks/useHorizontalReorder'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
 import { angka as rb, formatTanggal, kapitalAwal, rupiah } from '@/lib/format'
 import type { Dompet, Transaksi } from '@/lib/types'
-import { bulananHarian, geser, jatahInfo, labelPeriode, liburanInfo, milikDompet, periodeDari, ringkasan, type Status } from '@/lib/uang'
+import { bulananHarian, geser, jatahInfo, labelPeriode, liburanInfo, milikDompet, periodeDari, ringkasan, totalHarian, type Status } from '@/lib/uang'
 import { pindahUrut } from '@/lib/urut'
 import { useFeedback } from './Feedback'
+import { GrafikMinggu } from './GrafikMinggu'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { TransaksiForm } from './TransaksiForm'
 import { Empty, Field, inputCls, PageHeader, Pagination, SubmitButton } from './ui'
@@ -146,6 +147,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
   const [deleting, setDeleting] = useState<Transaksi | null>(null)
   const [dompetSheet, setDompetSheet] = useState<{ edit: Dompet | null } | null>(null)
   const [hapusDompet, setHapusDompet] = useState<Dompet | null>(null)
+  const [grafik, setGrafik] = useState<'masuk' | 'keluar' | null>(null)
   const rail = useRef<HTMLDivElement>(null)
   const bolehKlik = useRef(true) // dimatikan sebentar setelah geseran: klik yang ikut muncul saat jari dilepas diabaikan
 
@@ -458,18 +460,18 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
       </div>
 
       <div className="mx-3 grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-white p-3 shadow-sm">
+        <button type="button" onClick={() => setGrafik('masuk')} className="min-w-0 rounded-xl bg-white p-3 text-left shadow-sm active:bg-gray-50">
           <p className="flex items-center gap-1 text-xs text-muted">
             <ArrowDownLeft size={14} className="text-done" /> Uang masuk
           </p>
           <p className="mt-0.5 truncate text-base font-bold tabular-nums text-done">+ {rupiah(masuk)}</p>
-        </div>
-        <div className="rounded-xl bg-white p-3 shadow-sm">
+        </button>
+        <button type="button" onClick={() => setGrafik('keluar')} className="min-w-0 rounded-xl bg-white p-3 text-left shadow-sm active:bg-gray-50">
           <p className="flex items-center gap-1 text-xs text-muted">
             <ArrowUpRight size={14} className="text-del" /> Uang keluar
           </p>
           <p className="mt-0.5 truncate text-base font-bold tabular-nums text-del">− {rupiah(keluar)}</p>
-        </div>
+        </button>
       </div>
 
       <button
@@ -514,6 +516,19 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
 
       <Pagination page={cur} pages={pages} onChange={setPage} />
 
+      <Sheet
+        open={grafik !== null}
+        title={`Uang ${grafik ?? ''} · ${aktifId === null ? 'Semua dompet' : (nama.get(aktifId) ?? '')}`}
+        onClose={() => setGrafik(null)}
+      >
+        {grafik && (
+          <GrafikMinggu
+            data={totalHarian(items, grafik, aktifId, today)}
+            warna={grafik === 'masuk' ? 'text-done' : 'text-del'}
+          />
+        )}
+      </Sheet>
+
       <Sheet open={selected !== null} title="Transaksi" onClose={() => setSelected(null)}>
         {selected && detail && (
           <div className="space-y-4">
@@ -521,18 +536,24 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
               <p className={`text-2xl font-bold tabular-nums ${detail.warna}`}>
                 {selected.jenis === 'pindah' ? rupiah(selected.jumlah) : detail.jumlah}
               </p>
-              <p className="mt-1 break-words font-medium">
-                {selected.jenis === 'pindah'
-                  ? `${nama.get(selected.dompetId) ?? '?'} → ${nama.get(selected.tujuanId ?? '') ?? '?'}`
-                  : selected.keterangan}
-              </p>
-              <p className="mt-0.5 text-sm text-muted">
-                {selected.jenis === 'masuk' ? 'Uang masuk' : selected.jenis === 'keluar' ? 'Uang keluar' : 'Pindah dana'}
-                {selected.jenis !== 'pindah' && ` · ${nama.get(selected.dompetId) ?? '?'}`} · {formatTanggal(selected.tanggal)}
-              </p>
-              {selected.jenis === 'pindah' && selected.keterangan !== 'Pindah dana' && (
-                <p className="mt-1 break-words text-sm text-muted">{selected.keterangan}</p>
-              )}
+              {selected.keterangan !== 'Pindah dana' && <p className="mt-1 break-words font-medium">{selected.keterangan}</p>}
+              <dl className="mt-3 divide-y divide-line text-sm">
+                {[
+                  ['Tanggal', formatTanggal(selected.tanggal)],
+                  ['Jenis', selected.jenis === 'masuk' ? 'Uang masuk' : selected.jenis === 'keluar' ? 'Uang keluar' : 'Pindah dana'],
+                  ...(selected.jenis === 'pindah'
+                    ? [
+                        ['Dari dompet', nama.get(selected.dompetId) ?? '?'],
+                        ['Ke dompet', nama.get(selected.tujuanId ?? '') ?? '?'],
+                      ]
+                    : [['Dompet', nama.get(selected.dompetId) ?? '?']]),
+                ].map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-3 py-1.5">
+                    <dt className="shrink-0 text-muted">{k}</dt>
+                    <dd className="min-w-0 break-words text-right">{v}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <button
