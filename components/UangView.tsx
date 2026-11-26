@@ -3,11 +3,11 @@
 import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Handshake, Pencil, Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type UIEvent } from 'react'
-import { deleteDompet, saveDompet, urutkanDompet } from '@/app/actions/dompet'
+import { deleteDompet, saveDompet, selesaiLiburan, urutkanDompet } from '@/app/actions/dompet'
 import { deleteTransaksi } from '@/app/actions/transaksi'
 import { useHorizontalReorder } from '@/hooks/useHorizontalReorder'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
-import { angka as rb, formatTanggal, kapitalAwal, rupiah } from '@/lib/format'
+import { angka as rb, formatTanggal, formatTanggalSingkat, kapitalAwal, nowJakarta, rupiah } from '@/lib/format'
 import type { Dompet, Transaksi } from '@/lib/types'
 import { bulananHarian, geser, jatahInfo, labelPeriode, liburanInfo, milikDompet, periodeDari, ringkasan, totalHarian, type Status } from '@/lib/uang'
 import { pindahUrut } from '@/lib/urut'
@@ -37,11 +37,14 @@ function DompetForm({
   initial,
   onDone,
   onAskDelete,
+  onAskSelesai,
   alasanTerkunci,
 }: {
   initial: Dompet | null
   onDone: () => void
   onAskDelete: () => void
+  /** Dompet Liburan yang sudah ada pengeluarannya: tutup dan mulai hitungan baru. */
+  onAskSelesai: (() => void) | null
   /** Alasan dompet tidak bisa dihapus (null = boleh). */
   alasanTerkunci: string | null
 }) {
@@ -118,6 +121,11 @@ function DompetForm({
         </div>
       )}
       <SubmitButton busy={busy}>{initial ? 'Simpan' : 'Tambah dompet'}</SubmitButton>
+      {onAskSelesai && (
+        <button type="button" onClick={onAskSelesai} className="h-11 w-full rounded-xl bg-done/10 font-semibold text-done">
+          Liburan selesai, mulai baru
+        </button>
+      )}
       {initial && !jenis && (
         <>
           <button
@@ -147,6 +155,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
   const [deleting, setDeleting] = useState<Transaksi | null>(null)
   const [dompetSheet, setDompetSheet] = useState<{ edit: Dompet | null } | null>(null)
   const [hapusDompet, setHapusDompet] = useState<Dompet | null>(null)
+  const [tutupLiburan, setTutupLiburan] = useState<Dompet | null>(null)
   const [grafik, setGrafik] = useState<'masuk' | 'keluar' | null>(null)
   const rail = useRef<HTMLDivElement>(null)
   const bolehKlik = useRef(true) // dimatikan sebentar setelah geseran: klik yang ikut muncul saat jari dilepas diabaikan
@@ -235,11 +244,23 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
 
   const { masuk, keluar } = ringkasan(items, per, aktifId)
   const daftar = items.filter((t) => milikDompet(t, aktifId) && t.tanggal >= per.start && t.tanggal <= per.end)
+  // Dompet Liburan: riwayat dikelompokkan per liburan (yang berjalan di atas), dipisah garis.
+  const diLiburan = aktif.dompet?.jenis === 'liburan'
+  const cap = (t: Transaksi) => (diLiburan ? (t.liburanSelesai ?? '') : '')
+  if (diLiburan) daftar.sort((a, b) => (cap(b) || '~').localeCompare(cap(a) || '~')) // '~' = belum ditutup
 
   const pages = Math.max(1, Math.ceil(daftar.length / ITEM_PER_HALAMAN))
   const cur = Math.min(page, pages - 1)
   const tampil = daftar.slice(cur * ITEM_PER_HALAMAN, (cur + 1) * ITEM_PER_HALAMAN)
-  const hari = [...new Set(tampil.map((t) => t.tanggal))]
+  const kelompok = [...new Set(tampil.map((t) => `${cap(t)}|${t.tanggal}`))].map((key) => {
+    const [selesai, tanggal] = key.split('|')
+    return { key, selesai, tanggal }
+  })
+  const terpakaiLiburan = (selesai: string) =>
+    items.reduce(
+      (s, t) => (t.liburanSelesai === selesai && t.jenis === 'keluar' && t.dompetId === aktifId ? s + t.jumlah : s),
+      0,
+    )
 
   function ganti(delta: number) {
     setPer(geser(per, delta))
@@ -265,10 +286,12 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
       const h = bulananHarian(items, per, d.id, d.jatah, today)
       return {
         persen: h.persen,
-        status: h.status,
+        status: p.lewat ? 'lewat' : h.status, // jatah periode habis tetap merah walau hari ini hemat
         l1: `Hari ini ${rupiah(h.terpakai)} dari ${rupiah(h.batas)}`,
         l2: h.sisa >= 0 ? `Sisa hari ini ${rupiah(h.sisa)}` : `Lewat ${rupiah(-h.sisa)}`,
-        l3: `Periode: ${rupiah(p.terpakai)} dari ${rupiah(d.jatah)}`,
+        l3: p.lewat
+          ? `Periode lewat ${rupiah(-p.sisa)} dari ${rupiah(d.jatah)}`
+          : `Periode: ${rupiah(p.terpakai)} dari ${rupiah(d.jatah)}`,
       }
     }
     return {
@@ -486,12 +509,18 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
       {daftar.length === 0 ? (
         <Empty>Belum ada transaksi di periode ini.</Empty>
       ) : (
-        hari.map((tgl) => (
-          <section key={tgl} className="mx-3 mb-3">
+        kelompok.map(({ key, selesai, tanggal: tgl }, i) => (
+          <section key={key} className="mx-3 mb-3">
+            {selesai && selesai !== kelompok[i - 1]?.selesai && (
+              <p className="mb-3 mt-4 flex items-center gap-2 text-xs font-semibold text-muted before:h-px before:flex-1 before:bg-gray-300 after:h-px after:flex-1 after:bg-gray-300">
+                Liburan selesai {formatTanggalSingkat(nowJakarta(Date.parse(selesai)).tanggal)} ·{' '}
+                {rupiah(terpakaiLiburan(selesai))}
+              </p>
+            )}
             <h3 className="mb-1 px-1 text-xs font-semibold text-muted">{formatTanggal(tgl)}</h3>
             <div className="space-y-1.5">
               {tampil
-                .filter((t) => t.tanggal === tgl)
+                .filter((t) => t.tanggal === tgl && cap(t) === selesai)
                 .map((t) => {
                   const b = baris(t)
                   return (
@@ -605,6 +634,15 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
       >
         <DompetForm
           initial={editDompet}
+          onAskSelesai={
+            editDompet?.jenis === 'liburan' &&
+            items.some((t) => t.jenis === 'keluar' && t.dompetId === editDompet.id && !t.liburanSelesai)
+              ? () => {
+                  setTutupLiburan(editDompet)
+                  setDompetSheet(null)
+                }
+              : null
+          }
           alasanTerkunci={alasanTerkunci}
           onDone={() => setDompetSheet(null)}
           onAskDelete={() => {
@@ -613,6 +651,15 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
           }}
         />
       </Sheet>
+
+      <ConfirmSheet
+        open={tutupLiburan !== null}
+        title="Liburan selesai?"
+        message="Hitungan budget dan hari mulai dari awal. Riwayat liburan ini tetap ada, dipisah garis. Tidak bisa dibatalkan."
+        confirmLabel="Ya, mulai baru"
+        onClose={() => setTutupLiburan(null)}
+        onConfirm={() => tutupLiburan && track(selesaiLiburan(tutupLiburan.id), 'Liburan ditutup', 'Menyimpan...')}
+      />
 
       <ConfirmSheet
         open={deleting !== null}

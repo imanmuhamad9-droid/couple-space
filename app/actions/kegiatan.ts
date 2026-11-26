@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { must, run } from '@/lib/action'
-import { kapitalAwal } from '@/lib/format'
+import { kapitalAwal, todayJakarta } from '@/lib/format'
 import { clearOwnerFiles, removeOwnerFiles } from '@/lib/storage'
 import { admin } from '@/lib/supabase-admin'
 
@@ -18,6 +18,11 @@ const SaveInput = z.object({
   budget: z.coerce.number().int('Budget harus angka bulat').min(0).max(2_000_000_000).default(0),
   /** uuid = hubungkan ke tempat, null = putuskan, tidak dikirim = jangan diubah. */
   tempatId: Id.nullable().optional(),
+})
+
+const Pengeluaran = z.object({
+  jumlah: z.number().int('Jumlah harus angka bulat').min(1).max(100_000_000_000_000),
+  dompetId: z.uuid('Pilih dompet'),
 })
 
 const ChangesInput = z
@@ -67,19 +72,25 @@ export async function deleteKegiatan(idRaw: string) {
 /**
  * Tandai terlaksana. Lampiran Rencana dihapus (Histori mulai kosong).
  * Jika `tempatIdRaw` dipilih dan kegiatan belum terhubung ke tempat, kegiatan dihubungkan ke tempat itu.
+ * Jika `pengeluaranRaw` diisi, dicatat juga sebagai uang keluar (keterangan = nama kegiatan).
  * Jumlah kunjungan tidak disimpan: dihitung dari kegiatan terlaksana yang terhubung ke tempat.
  */
-export async function markTerlaksana(idRaw: string, tempatIdRaw?: string | null) {
+export async function markTerlaksana(
+  idRaw: string,
+  tempatIdRaw?: string | null,
+  pengeluaranRaw?: z.input<typeof Pengeluaran> | null,
+) {
   return run(async () => {
     const id = Id.parse(idRaw)
     const picked = tempatIdRaw ? Id.parse(tempatIdRaw) : null
+    const keluar = pengeluaranRaw ? Pengeluaran.parse(pengeluaranRaw) : null
 
     const cur = must(await admin().from('kegiatan').select('*').eq('id', id).maybeSingle())
     if (!cur.data) throw new Error('Kegiatan tidak ditemukan')
-    const row = cur.data as { status: string; tempat_id?: string | null }
+    const row = cur.data as { status: string; tanggal: string; kegiatan: string; tempat_id?: string | null }
     if (row.status !== 'rencana') throw new Error('Kegiatan ini sudah terlaksana')
 
-    must(
+    const diubah = must(
       await admin()
         .from('kegiatan')
         .update({
@@ -88,8 +99,24 @@ export async function markTerlaksana(idRaw: string, tempatIdRaw?: string | null)
           ...(picked && !row.tempat_id ? { tempat_id: picked } : {}),
         })
         .eq('id', id)
-        .eq('status', 'rencana'),
+        .eq('status', 'rencana')
+        .select('id'),
     )
+    // Tidak ada baris berubah = sudah ditandai dari tempat lain: jangan catat pengeluaran dua kali.
+    if (!diubah.data?.length) throw new Error('Kegiatan ini sudah terlaksana')
+
+    let uangGagal = false
+    if (keluar) {
+      const hariIni = todayJakarta()
+      const ins = await admin().from('transaksi').insert({
+        tanggal: row.tanggal < hariIni ? row.tanggal : hariIni,
+        jenis: 'keluar',
+        jumlah: keluar.jumlah,
+        keterangan: row.kegiatan,
+        dompet_id: keluar.dompetId,
+      })
+      uangGagal = Boolean(ins.error)
+    }
 
     let lampiranGagal = false
     try {
@@ -98,6 +125,7 @@ export async function markTerlaksana(idRaw: string, tempatIdRaw?: string | null)
       lampiranGagal = true
     }
     refresh()
+    if (uangGagal) throw new Error('Sudah terlaksana, tetapi pengeluaran gagal dicatat. Tambahkan manual di Uang.')
     if (lampiranGagal) throw new Error('Sudah terlaksana, tetapi lampiran Rencana gagal dihapus. Hapus manual dari Histori.')
   })
 }

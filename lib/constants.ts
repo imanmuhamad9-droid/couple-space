@@ -44,20 +44,23 @@ export const PDF_MAX_BYTES = 4 * 1024 * 1024
 export const KETERANGAN = {
   rencana: [
     'Tahan kartu sebentar lalu geser untuk mengubah urutan.',
+    'Label "Terlewat" = tanggalnya sudah lewat tapi belum diceklis atau dihapus.',
     'Geser ke hari lain untuk memindahkan kegiatan ke tanggal tersebut.',
     'Jam akan menyesuaikan otomatis, jadi tidak ada yang bertabrakan.',
     'Ikon klip biru: upload foto atau PDF (PDF maks 4 MB). Tekan baris "lampiran" di kartu untuk melihat detail, foto, dan PDF-nya.',
     'Ceklis hijau: tandai terlaksana, kegiatan pindah ke Histori. Lampiran Rencana ikut dihapus, Histori mulai kosong.',
+    'Saat ceklis, isi "Habis berapa?" supaya langsung tercatat di Uang keluar. Kosongkan kalau sudah dicatat.',
     'Pindah urutan dimatikan saat kamu sedang mencari.',
   ],
   histori: [
-    'Kegiatan yang sudah terlaksana urut sesuai tanggal.',
+    'Kegiatan yang sudah terlaksana, terbaru di atas.',
     'Kegiatan di Histori tidak bisa diedit atau dihapus.',
     'Lampiran dari Rencana tidak ikut pindah. Foto atau PDF yang kamu unggah di sini yang tersimpan.',
     'Tekan baris "lampiran" untuk melihat detail. Tekan foto untuk memperbesar, tekan PDF untuk membukanya.',
   ],
   database: [
     'Daftar tempat favoritmu, bisa difilter berdasarkan kategori dan kota.',
+    'Tekan "Jadikan rencana" untuk membuat rencana ke tempat itu; lokasinya sudah terisi.',
     'Tekan tombol lokasi untuk menghitung jarak tiap tempat dari posisimu.',
     'Tekan "Buka di Maps" untuk langsung membuka lokasi di Google Maps.',
     'Jumlah kunjungan dihitung otomatis dari kegiatan terlaksana di Histori yang tempatnya kamu pilih dari rekomendasi.',
@@ -67,6 +70,7 @@ export const KETERANGAN = {
     'Geser kartu ke samping untuk berpindah dompet. Kartu "Keseluruhan" (total semua dompet) ada di ujung, disusul kartu putih "+ Dompet" untuk menambah dompet.',
     'Bulanan: jatah per periode gajian dibagi rata per hari. Kartu menampilkan batas hari ini dan sisanya; sisa hari ini tidak dibawa ke besok.',
     'Liburan: isi budget dan lama liburan (tekan kartunya). Budget dibagi per hari, dan sisa jajan hari ini dibawa ke hari berikutnya. Hari ke-1 adalah hari pertama ada pengeluaran dari dompet Liburan. Kartu berubah kuning (hampir habis) atau merah (lewat batas).',
+    'Selesai liburan: tekan kartu Liburan lalu "Liburan selesai, mulai baru". Hitungan mulai dari awal, riwayat lama tetap ada dan dipisah garis. Saldo tidak berubah.',
     'Tabungan: hanya saldo, tanpa target. Tiga dompet bawaan ini terkunci (tidak bisa dihapus atau diganti nama). Dompet yang kamu tambah sendiri boleh punya jatah opsional dan bisa dihapus.',
     'Tekan lama kartu dompet lalu geser ke kiri atau kanan untuk mengubah urutannya.',
     'Saldo terus terakumulasi dan tidak di-reset saat ganti periode gajian.',

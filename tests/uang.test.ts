@@ -192,6 +192,11 @@ describe('bulananHarian & liburanInfo', () => {
     expect(r.hariKe).toBe(2)
     expect(r.bolehHariIni).toBe(100_000)
   })
+  it('liburan: yang sudah ditutup tidak dihitung', () => {
+    const lama = { ...t('2026-11-01', 900_000, 'l'), liburanSelesai: '2026-11-03T00:00:00Z' }
+    const r = liburanInfo([t('2026-12-01', 100_000, 'l'), lama], 'l', 1_000_000, 2, '2026-12-01')
+    expect(r).toMatchObject({ terpakai: 100_000, hariKe: 1, status: 'aman' })
+  })
   it('liburan: lewat batas hari ini, dan hanya hitung dompet itu', () => {
     const data = [t('2026-12-01', 600_000, 'l'), t('2026-12-01', 999_999, 'lain')]
     const r = liburanInfo(data, 'l', 1_000_000, 2, '2026-12-01')

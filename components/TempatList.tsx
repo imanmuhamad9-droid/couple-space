@@ -9,6 +9,7 @@ import { KATEGORI, KOTA, TEMPAT_PER_HALAMAN } from '@/lib/constants'
 import { haversineKm } from '@/lib/geo'
 import type { Tempat } from '@/lib/types'
 import { useFeedback } from './Feedback'
+import { KegiatanForm } from './KegiatanForm'
 import { PhotoViewer } from './Photos'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { TempatCard } from './TempatCard'
@@ -30,7 +31,7 @@ const URUTAN: { id: Urut; label: string; hint: string }[] = [
   { id: 'sering', label: 'Paling sering dikunjungi', hint: 'Berdasarkan hitungan kunjungan' },
 ]
 
-export function TempatList({ items }: { items: Tempat[] }) {
+export function TempatList({ items, today }: { items: Tempat[]; today: string }) {
   const { track, toast } = useFeedback()
   const { me, locating, locate, setManual } = useLocation()
   const [q, setQ] = useState('')
@@ -46,6 +47,7 @@ export function TempatList({ items }: { items: Tempat[] }) {
   const [mapOpen, setMapOpen] = useState(false)
   const [urut, setUrut] = useState<Urut>('nama')
   const [urutOpen, setUrutOpen] = useState(false)
+  const [rencana, setRencana] = useState<Tempat | null>(null)
 
   // Chip hanya tampil untuk nilai yang punya data; urutan mengikuti daftar tetap.
   const kategoriAda = KATEGORI.filter((k) => items.some((t) => t.kategori === k))
@@ -185,6 +187,7 @@ export function TempatList({ items }: { items: Tempat[] }) {
               onEdit={() => openForm(t)}
               onDelete={() => setDeleting(t)}
               onOpenPhoto={() => setViewerId(t.id)}
+              onPlan={() => setRencana(t)}
             />
           ))}
         </div>
@@ -195,6 +198,12 @@ export function TempatList({ items }: { items: Tempat[] }) {
 
       <Sheet open={formOpen} title={editing ? 'Edit Tempat' : 'Tambah Tempat'} onClose={() => setFormOpen(false)}>
         <TempatForm initial={editing} onDone={() => setFormOpen(false)} />
+      </Sheet>
+
+      <Sheet open={rencana !== null} title="Jadikan Rencana" onClose={() => setRencana(null)}>
+        {rencana && (
+          <KegiatanForm initial={null} today={today} tempat={items} tempatAwal={rencana} onDone={() => setRencana(null)} />
+        )}
       </Sheet>
 
       <ConfirmSheet

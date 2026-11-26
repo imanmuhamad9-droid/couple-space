@@ -65,4 +65,6 @@ export type Transaksi = {
   dompetId: string
   /** Hanya untuk pindah dana: dompet tujuan. */
   tujuanId: string | null
+  /** Terisi = bagian dari liburan yang sudah selesai (waktu ditutupnya). */
+  liburanSelesai?: string | null
 }

@@ -5,10 +5,10 @@ import { deleteKegiatan, markTerlaksana, reorderKegiatan } from '@/app/actions/k
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { useMinute } from '@/hooks/useMinute'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
-import { formatTanggal, formatTanggalPanjang, formatTanggalSingkat, nowJakarta, rupiah } from '@/lib/format'
+import { angka, formatTanggal, formatTanggalPanjang, formatTanggalSingkat, nowJakarta, rupiah } from '@/lib/format'
 import { mapsUrl } from '@/lib/geo'
 import { kegiatanBerlangsung, moveItem } from '@/lib/schedule'
-import type { Kegiatan, TempatRingkas } from '@/lib/types'
+import type { Dompet, Kegiatan, TempatRingkas } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { KegiatanCard } from './KegiatanCard'
 import { KegiatanDetail } from './KegiatanDetail'
@@ -16,7 +16,7 @@ import { KegiatanForm } from './KegiatanForm'
 import { PhotoViewer } from './Photos'
 import { PlaceSuggest } from './PlaceSuggest'
 import { ConfirmSheet, Sheet } from './Sheet'
-import { Empty, Fab, PageHeader, Pagination, SearchBox } from './ui'
+import { Empty, Fab, Field, inputCls, PageHeader, Pagination, SearchBox } from './ui'
 
 type Mode = 'rencana' | 'histori'
 type Override = { tanggal: string; jam: string }
@@ -38,21 +38,28 @@ function haystack(k: Kegiatan) {
     .toLowerCase()
 }
 
-/** Isi sheet "terlaksana": tempat boleh dipilih dari Database (opsional) agar tercatat sebagai kunjungan. */
+/**
+ * Isi sheet "terlaksana": tempat boleh dipilih dari Database (agar tercatat sebagai kunjungan) dan
+ * pengeluarannya boleh langsung dicatat ke Uang. Keduanya opsional.
+ */
 function DoneBody({
   item,
   tempat,
+  dompet,
   onCancel,
   onConfirm,
 }: {
   item: Kegiatan
   tempat: TempatRingkas[]
+  dompet: Dompet[]
   onCancel: () => void
-  onConfirm: (tempatId: string | null) => void
+  onConfirm: (tempatId: string | null, pengeluaran: { jumlah: number; dompetId: string } | null) => void
 }) {
   const linked = tempat.find((t) => t.id === item.tempatId) ?? null
   const [text, setText] = useState('')
   const [picked, setPicked] = useState<TempatRingkas | null>(null)
+  const [digits, setDigits] = useState(item.budget > 0 ? String(item.budget) : '')
+  const [dompetId, setDompetId] = useState(dompet[0]?.id ?? '')
 
   return (
     <div className="space-y-3">
@@ -78,13 +85,46 @@ function DoneBody({
           maxLength={150}
         />
       )}
+      {dompet.length > 0 && (
+        <div>
+          <Field label="Habis berapa? (Rp, boleh dikosongkan)">
+            <input
+              inputMode="numeric"
+              autoComplete="off"
+              value={digits ? angka(Number(digits)) : ''}
+              onChange={(e) => setDigits(e.target.value.replace(/\D/g, '').slice(0, 14))}
+              placeholder="0"
+              className={inputCls}
+            />
+          </Field>
+          <p className="mt-1 text-xs text-muted">
+            Diisi = masuk ke Uang keluar. Kosongkan kalau sudah kamu catat di Uang.
+          </p>
+        </div>
+      )}
+      {Number(digits) > 0 && dompet.length > 0 && (
+        <Field label="Dari dompet">
+          <select value={dompetId} onChange={(e) => setDompetId(e.target.value)} className={inputCls}>
+            {dompet.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.nama}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
       <div className="grid grid-cols-2 gap-3 pt-1">
         <button type="button" onClick={onCancel} className="h-12 rounded-xl bg-gray-100 font-semibold">
           Batal
         </button>
         <button
           type="button"
-          onClick={() => onConfirm(linked ? null : (picked?.id ?? null))}
+          onClick={() =>
+            onConfirm(
+              linked ? null : (picked?.id ?? null),
+              Number(digits) > 0 && dompetId ? { jumlah: Number(digits), dompetId } : null,
+            )
+          }
           className="h-12 rounded-xl bg-done font-semibold text-white"
         >
           Ya, terlaksana
@@ -99,11 +139,14 @@ export function KegiatanList({
   items,
   today,
   tempat,
+  dompet = [],
 }: {
   mode: Mode
   items: Kegiatan[]
   today: string
   tempat: TempatRingkas[]
+  /** Hanya Rencana: untuk mencatat pengeluaran saat menandai terlaksana. */
+  dompet?: Dompet[]
 }) {
   const { track } = useFeedback()
   const [q, setQ] = useState('')
@@ -126,8 +169,12 @@ export function KegiatanList({
     () =>
       items
         .map((i) => ({ ...i, ...over.get(i.id) }))
-        .sort((a, b) => a.tanggal.localeCompare(b.tanggal) || a.jam.localeCompare(b.jam)),
-    [items, over],
+        // Histori: terbaru di atas. Rencana: terdekat di atas.
+        .sort(
+          (a, b) =>
+            (mode === 'histori' ? -1 : 1) * (a.tanggal.localeCompare(b.tanggal) || a.jam.localeCompare(b.jam)),
+        ),
+    [items, over, mode],
   )
 
   const words = q.toLowerCase().split(/\s+/).filter(Boolean)
@@ -234,6 +281,7 @@ export function KegiatanList({
                         mode={mode}
                         dragging={isDragged}
                         active={item.id === aktifId}
+                        terlewat={mode === 'rencana' && item.tanggal < today}
                         mapsHref={mapsFor(item)}
                         style={isDragged ? { transform: `translateY(${dy}px)` } : undefined}
                         dragProps={mode === 'rencana' ? bind(item.id) : undefined}
@@ -264,11 +312,12 @@ export function KegiatanList({
           <DoneBody
             item={confirm.item}
             tempat={tempat}
+            dompet={dompet}
             onCancel={() => setConfirm(null)}
-            onConfirm={(tempatId) => {
+            onConfirm={(tempatId, pengeluaran) => {
               const id = confirm.item.id
               setConfirm(null)
-              track(markTerlaksana(id, tempatId), 'Pindah ke Histori', 'Memproses...')
+              track(markTerlaksana(id, tempatId, pengeluaran), 'Pindah ke Histori', 'Memproses...')
             }}
           />
         )}

@@ -135,13 +135,14 @@ export function bulananHarian(items: Transaksi[], p: Periode, dompetId: string, 
 
 /**
  * Dompet liburan: budget untuk `hari` hari. Hari pertama = hari pertama ada pengeluaran dari dompet ini.
+ * Pengeluaran liburan yang sudah ditutup (`liburanSelesai`) tidak dihitung.
  * Sisa tiap hari DIBAWA ke hari berikutnya: yang boleh dipakai sampai hari ini = budget/hari x hari ke-n.
  */
 export function liburanInfo(items: Transaksi[], dompetId: string, budget: number, hari: number, today: string) {
   let terpakai = 0
   let awal: string | null = null
   for (const t of items) {
-    if (t.jenis !== 'keluar' || t.dompetId !== dompetId) continue
+    if (t.jenis !== 'keluar' || t.dompetId !== dompetId || t.liburanSelesai) continue
     terpakai += t.jumlah
     if (!awal || t.tanggal < awal) awal = t.tanggal
   }

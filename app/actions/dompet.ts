@@ -82,3 +82,25 @@ export async function deleteDompet(idRaw: string) {
     revalidatePath('/', 'layout')
   })
 }
+
+/**
+ * Tutup liburan yang sedang berjalan: semua transaksi dompet Liburan yang belum ditandai diberi cap waktu,
+ * sehingga hitungan budget dan hari mulai dari awal. Transaksinya tetap ada.
+ */
+export async function selesaiLiburan(idRaw: string) {
+  return run(async () => {
+    const id = z.uuid().parse(idRaw)
+    const ada = must(await admin().from('dompet').select('*').eq('id', id).limit(1))
+    if (ada.data?.[0]?.jenis !== 'liburan') throw new Error('Hanya untuk dompet Liburan')
+    const res = await admin()
+      .from('transaksi')
+      .update({ liburan_selesai: new Date().toISOString() })
+      .or(`dompet_id.eq.${id},dompet_tujuan_id.eq.${id}`)
+      .is('liburan_selesai', null)
+    if (res.error && /liburan_selesai/.test(res.error.message)) {
+      throw new Error('Jalankan dulu migrasi 0011 di Supabase')
+    }
+    must(res)
+    revalidatePath('/', 'layout')
+  })
+}

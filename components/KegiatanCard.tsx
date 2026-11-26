@@ -13,6 +13,8 @@ type Props = {
   dragging: boolean
   /** Sedang berlangsung sekarang: kartu bergradien biru. */
   active?: boolean
+  /** Rencana yang tanggalnya sudah lewat tapi belum diceklis. */
+  terlewat?: boolean
   /** Jika lokasi dipilih dari Database: tautan Maps tempat itu. */
   mapsHref?: string
   style?: CSSProperties
@@ -32,6 +34,7 @@ export function KegiatanCard({
   mode,
   dragging,
   active = false,
+  terlewat = false,
   mapsHref,
   style,
   dragProps,
@@ -76,6 +79,9 @@ export function KegiatanCard({
             <span className="size-1.5 animate-pulse rounded-full bg-white" />
             Sekarang
           </span>
+        )}
+        {terlewat && !active && (
+          <span className="shrink-0 rounded-full bg-del/10 px-2 py-0.5 text-[11px] font-semibold text-del">Terlewat</span>
         )}
         {done && (
           <span className="shrink-0 rounded-full bg-done/10 px-2 py-0.5 text-[11px] font-semibold text-done">

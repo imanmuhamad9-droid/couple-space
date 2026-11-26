@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCheck, ExternalLink, ImageIcon, Pencil, Trash2 } from 'lucide-react'
+import { CalendarPlus, CheckCheck, ExternalLink, ImageIcon, Pencil, Trash2 } from 'lucide-react'
 import { mapsUrl } from '@/lib/geo'
 import type { Tempat } from '@/lib/types'
 import { UploadButton } from './Photos'
@@ -14,12 +14,14 @@ export function TempatCard({
   onEdit,
   onDelete,
   onOpenPhoto,
+  onPlan,
 }: {
   tempat: Tempat
   km: number | null
   onEdit: () => void
   onDelete: () => void
   onOpenPhoto: () => void
+  onPlan: () => void
 }) {
   const first = t.fotos[0]
   const jam = t.buka && t.tutup ? `Buka ${t.buka} - ${t.tutup}` : 'Jam belum diisi'
@@ -87,6 +89,14 @@ export function TempatCard({
           </button>
         </span>
       </div>
+
+      <button
+        type="button"
+        onClick={onPlan}
+        className="mt-1.5 flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-gray-100 text-xs font-medium active:opacity-80"
+      >
+        <CalendarPlus size={14} /> Jadikan rencana
+      </button>
     </article>
   )
 }

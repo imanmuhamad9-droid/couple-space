@@ -14,19 +14,22 @@ export function KegiatanForm({
   today,
   tempat,
   onDone,
+  tempatAwal = null,
 }: {
   initial: Kegiatan | null
   today: string
   tempat: TempatRingkas[]
   onDone: () => void
+  /** Rencana baru dari Database: lokasi sudah terisi tempat ini. */
+  tempatAwal?: TempatRingkas | null
 }) {
   const { track } = useFeedback()
   const [tanggal, setTanggal] = useState(initial?.tanggal ?? today)
   const [jam, setJam] = useState(initial?.jam ?? '09:00')
   const [kegiatan, setKegiatan] = useState(initial?.kegiatan ?? '')
-  const [lokasi, setLokasi] = useState(initial?.lokasi ?? '')
+  const [lokasi, setLokasi] = useState(initial?.lokasi ?? tempatAwal?.nama ?? '')
   const [picked, setPicked] = useState<TempatRingkas | null>(
-    () => tempat.find((t) => t.id === initial?.tempatId) ?? null,
+    () => tempat.find((t) => t.id === initial?.tempatId) ?? tempatAwal,
   )
   const [budget, setBudget] = useState(initial && initial.budget > 0 ? String(initial.budget) : '')
   const [busy, setBusy] = useState(false)
