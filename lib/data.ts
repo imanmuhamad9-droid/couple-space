@@ -150,6 +150,19 @@ export async function listDompet(): Promise<Dompet[]> {
 }
 
 /**
+ * Dompet transaksi tiap catatan gantian (id gantian -> id dompet).
+ * null = migrasi 0012 belum dijalankan.
+ */
+export async function dompetGantian(): Promise<Record<string, string> | null> {
+  const res = await admin().from('transaksi').select('gantian_id, dompet_id').not('gantian_id', 'is', null)
+  if (res.error) {
+    if (/gantian_id/.test(res.error.message)) return null
+    throw new Error(res.error.message)
+  }
+  return Object.fromEntries((res.data ?? []).map((r) => [r.gantian_id as string, r.dompet_id as string]))
+}
+
+/**
  * Semua catatan gantian (terbaru di atas) dan nama lawannya. Diambil per 1000 baris supaya saldo
  * tidak terpotong batas bawaan Supabase. `siap: false` = migrasi 0009 belum dijalankan.
  */

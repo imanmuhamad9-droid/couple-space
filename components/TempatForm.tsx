@@ -54,14 +54,14 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
       </Field>
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
         <Field label="Kategori">
-          <select value={kategori} onChange={(e) => setKategori(e.target.value)} className={inputCls}>
+          <select required value={kategori} onChange={(e) => setKategori(e.target.value)} className={inputCls}>
             {KATEGORI.map((k) => (
               <option key={k}>{k}</option>
             ))}
           </select>
         </Field>
         <Field label="Kota">
-          <select value={kota} onChange={(e) => setKota(e.target.value)} className={inputCls}>
+          <select required value={kota} onChange={(e) => setKota(e.target.value)} className={inputCls}>
             {KOTA.map((k) => (
               <option key={k}>{k}</option>
             ))}
@@ -88,7 +88,7 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
           onClick={() => fileInput.current?.click()}
           className="h-11 w-full rounded-xl border border-dashed border-line text-sm font-medium text-muted"
         >
-          {files.length ? `${files.length} foto dipilih` : 'Pilih foto (opsional)'}
+          {files.length ? `${files.length} foto dipilih` : 'Pilih foto'}
         </button>
         <input
           ref={fileInput}

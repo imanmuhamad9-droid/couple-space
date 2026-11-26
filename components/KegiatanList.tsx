@@ -69,7 +69,7 @@ function DoneBody({
         </p>
       ) : (
         <PlaceSuggest
-          label="Di tempat mana? (boleh dilewati)"
+          label="Di tempat mana?"
           places={tempat}
           value={text}
           picked={picked}
@@ -87,7 +87,7 @@ function DoneBody({
       )}
       {dompet.length > 0 && (
         <div>
-          <Field label="Habis berapa? (Rp, boleh dikosongkan)">
+          <Field label="Habis berapa? (Rp)">
             <input
               inputMode="numeric"
               autoComplete="off"
@@ -104,7 +104,7 @@ function DoneBody({
       )}
       {Number(digits) > 0 && dompet.length > 0 && (
         <Field label="Dari dompet">
-          <select value={dompetId} onChange={(e) => setDompetId(e.target.value)} className={inputCls}>
+          <select required value={dompetId} onChange={(e) => setDompetId(e.target.value)} className={inputCls}>
             {dompet.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.nama}

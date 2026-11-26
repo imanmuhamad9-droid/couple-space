@@ -15,7 +15,7 @@ import { useFeedback } from './Feedback'
 import { GrafikMinggu } from './GrafikMinggu'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { TransaksiForm } from './TransaksiForm'
-import { Empty, Field, inputCls, PageHeader, Pagination, SubmitButton } from './ui'
+import { Empty, Field, inputCls, PageHeader, Pagination, SearchBox, SubmitButton } from './ui'
 
 const SEMUA = 'semua'
 const TAMBAH = 'tambah'
@@ -85,7 +85,7 @@ function DompetForm({
       </Field>
       )}
       <div>
-        <Field label={jenis === 'liburan' ? 'Budget liburan (Rp)' : 'Jatah per periode gajian (Rp, opsional)'}>
+        <Field label={jenis === 'liburan' ? 'Budget liburan (Rp)' : 'Jatah per periode gajian (Rp)'}>
           <input
             required={jenis === 'liburan'}
             inputMode="numeric"
@@ -148,6 +148,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
   const sekarang = periodeDari(today)
   const [per, setPer] = useState(sekarang)
   const [page, setPage] = useState(0)
+  const [q, setQ] = useState('')
   const [idx, setIdx] = useState(0) // kartu yang sedang terlihat; 0 = dompet pertama (Bulanan)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Transaksi | null>(null)
@@ -243,7 +244,17 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
   const bisaMaju = per.start < sekarang.start
 
   const { masuk, keluar } = ringkasan(items, per, aktifId)
-  const daftar = items.filter((t) => milikDompet(t, aktifId) && t.tanggal >= per.start && t.tanggal <= per.end)
+  // Saat mencari, semua periode ikut dicari (dalam dompet yang sedang dilihat).
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean)
+  const cocok = (t: Transaksi) => {
+    const h = [t.keterangan, formatTanggal(t.tanggal), t.jumlah, rupiah(t.jumlah), nama.get(t.dompetId), nama.get(t.tujuanId ?? '')]
+      .join(' ')
+      .toLowerCase()
+    return words.every((w) => h.includes(w))
+  }
+  const daftar = items.filter(
+    (t) => milikDompet(t, aktifId) && (words.length ? cocok(t) : t.tanggal >= per.start && t.tanggal <= per.end),
+  )
   // Dompet Liburan: riwayat dikelompokkan per liburan (yang berjalan di atas), dipisah garis.
   const diLiburan = aktif.dompet?.jenis === 'liburan'
   const cap = (t: Transaksi) => (diLiburan ? (t.liburanSelesai ?? '') : '')
@@ -506,8 +517,16 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
       </button>
 
       <h2 className="mx-4 mb-1 mt-5 text-xs font-semibold text-muted">{judulRiwayat}</h2>
+      <SearchBox
+        value={q}
+        onChange={(v) => {
+          setQ(v)
+          setPage(0)
+        }}
+        placeholder="Cari di semua periode..."
+      />
       {daftar.length === 0 ? (
-        <Empty>Belum ada transaksi di periode ini.</Empty>
+        <Empty>{words.length ? 'Tidak ada yang cocok.' : 'Belum ada transaksi di periode ini.'}</Empty>
       ) : (
         kelompok.map(({ key, selesai, tanggal: tgl }, i) => (
           <section key={key} className="mx-3 mb-3">

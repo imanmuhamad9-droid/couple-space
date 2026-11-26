@@ -87,7 +87,7 @@ export function KegiatanForm({
           setLokasi(t.nama)
         }}
       />
-      <Field label="Budget (Rp, opsional)">
+      <Field label="Budget (Rp)">
         <input
           inputMode="numeric"
           autoComplete="off"

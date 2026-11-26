@@ -78,6 +78,8 @@ export const KETERANGAN = {
     'Uang masuk dan keluar dihitung per periode gajian: dari gajian sampai sehari sebelum gajian berikutnya. Gajian tanggal 25; jika jatuh di Sabtu atau Minggu, maju ke Jumat sebelumnya (24 atau 23). Hari libur nasional tidak dihitung.',
     'Saat mengetik keterangan transaksi baru, muncul saran dari yang pernah kamu catat. Tekan satu saran untuk mengisi keterangan, jumlah, dan dompetnya.',
     'Tekan kartu "Uang masuk" atau "Uang keluar" untuk diagram 7 hari terakhir dompet yang sedang dilihat.',
+    'Kotak cari di atas riwayat mencari keterangan, tanggal, atau jumlah di semua periode.',
+    'Di semua form, bintang merah = wajib diisi.',
     'Tekan panah di atas untuk melihat periode lain. Tekan satu transaksi untuk edit atau hapus.',
   ],
   gantian: [
@@ -86,7 +88,7 @@ export const KETERANGAN = {
     'Rincian: isi tiap barang dan punya siapa (Berdua = dibagi dua). Kalau ada pajak, service, atau diskon, isi "Total di struk"; selisihnya dibagi sebanding belanja masing-masing.',
     'Bayar bisa kapan saja. Nominal sudah terisi penuh; ubah angkanya kalau mau bayar sebagian, sisanya tetap tercatat.',
     '"Rekap WA" berisi saldo dan catatan sejak terakhir impas.',
-    'Gantian berdiri sendiri: tidak mengubah transaksi atau saldo dompet.',
+    'Kamu yang nalangin atau kamu yang bayar: masuk Uang keluar. Adik yang bayar ke kamu: masuk Uang masuk. Adik yang nalangin: tidak ada yang dicatat. Edit dan hapus di sini ikut mengubah catatannya di Uang.',
     'Tekan satu catatan untuk edit atau hapus. Pembayaran hanya bisa dihapus.',
     'Tekan nama di kartu saldo untuk menggantinya.',
   ],

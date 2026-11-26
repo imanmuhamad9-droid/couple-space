@@ -17,6 +17,7 @@ import {
   type Pelaku,
   type Punya,
 } from '@/lib/gantian'
+import type { Dompet } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { Empty, Field, inputCls, PageHeader, Pagination, PickerField, SubmitButton } from './ui'
@@ -71,6 +72,35 @@ function InputRupiah({
   )
 }
 
+/** Dompet tempat uangku keluar atau masuk. Pilihan kosong = tidak dicatat di Uang. */
+function PilihDompet({
+  dompet,
+  value,
+  onChange,
+  masuk = false,
+}: {
+  dompet: Dompet[]
+  value: string
+  onChange: (id: string) => void
+  masuk?: boolean
+}) {
+  return (
+    <div>
+      <Field label={masuk ? 'Catat di Uang masuk' : 'Catat di Uang keluar'}>
+        <select value={value} onChange={(e) => onChange(e.target.value)} className={inputCls}>
+          {dompet.map((d) => (
+            <option key={d.id} value={d.id}>
+              {masuk ? 'Ke' : 'Dari'} {d.nama}
+            </option>
+          ))}
+          <option value="">Tidak dicatat</option>
+        </select>
+      </Field>
+      <p className="mt-1 text-xs text-muted">Pilih &quot;Tidak dicatat&quot; kalau sudah kamu catat di Uang.</p>
+    </div>
+  )
+}
+
 /** Baris struk selagi diketik: harga masih teks digit. */
 type Isian = { key: number; nama: string; harga: string; punya: Punya }
 
@@ -80,11 +110,16 @@ function CatatForm({
   initial,
   nama,
   today,
+  dompet,
+  dompetAwal,
   onDone,
 }: {
   initial: Gantian | null
   nama: string
   today: string
+  dompet: Dompet[]
+  /** Dompet terpilih saat dibuka ('' = tidak dicatat). */
+  dompetAwal: string
   onDone: () => void
 }) {
   const { track } = useFeedback()
@@ -104,6 +139,7 @@ function CatatForm({
     initial?.rincian?.length && initial.jumlah !== jumlahBarang(initial.rincian) ? String(initial.jumlah) : '',
   )
   const [tanggal, setTanggal] = useState(initial?.tanggal ?? today)
+  const [dompetId, setDompetId] = useState(dompetAwal)
   const [busy, setBusy] = useState(false)
 
   const bagi = hitung === 'bagi'
@@ -120,7 +156,16 @@ function CatatForm({
     e.preventDefault()
     setBusy(true)
     const r = await track(
-      saveTalang({ id: initial?.id, tanggal, pelaku, jumlah: total, bagi, keterangan, rincian: rinci ? rincian : null }),
+      saveTalang({
+        id: initial?.id,
+        tanggal,
+        pelaku,
+        jumlah: total,
+        bagi,
+        keterangan,
+        rincian: rinci ? rincian : null,
+        dompetId: dompet.length ? dompetId || null : undefined,
+      }),
       'Tersimpan',
     )
     setBusy(false)
@@ -198,7 +243,7 @@ function CatatForm({
             + Barang lain
           </button>
           <div>
-            <Field label="Total di struk (Rp, opsional)">
+            <Field label="Total di struk (Rp)">
               <input
                 inputMode="numeric"
                 autoComplete="off"
@@ -243,13 +288,27 @@ function CatatForm({
           )}
         </div>
       )}
+      {pelaku === 'aku' && dompet.length > 0 && <PilihDompet dompet={dompet} value={dompetId} onChange={setDompetId} />}
       <PickerField label="Tanggal" type="date" required value={tanggal} onChange={setTanggal} />
       <SubmitButton busy={busy}>{initial ? 'Simpan perubahan' : 'Simpan'}</SubmitButton>
     </form>
   )
 }
 
-function BayarForm({ saldo, nama, today, onDone }: { saldo: number; nama: string; today: string; onDone: () => void }) {
+function BayarForm({
+  saldo,
+  nama,
+  today,
+  dompet,
+  onDone,
+}: {
+  saldo: number
+  nama: string
+  today: string
+  dompet: Dompet[]
+  onDone: () => void
+}) {
+  const [dompetId, setDompetId] = useState(dompet[0]?.id ?? '')
   const { track, toast } = useFeedback()
   const total = Math.abs(saldo)
   const [jumlah, setJumlah] = useState(String(total))
@@ -261,7 +320,12 @@ function BayarForm({ saldo, nama, today, onDone }: { saldo: number; nama: string
     e.preventDefault()
     setBusy(true)
     const r = await track(
-      bayarGantian({ tanggal, pelaku: saldo > 0 ? 'dia' : 'aku', jumlah: Number(jumlah || 0) }),
+      bayarGantian({
+        tanggal,
+        pelaku: saldo > 0 ? 'dia' : 'aku',
+        jumlah: Number(jumlah || 0),
+        dompetId: dompet.length ? dompetId || null : undefined,
+      }),
       'Pembayaran tercatat',
     )
     setBusy(false)
@@ -305,6 +369,7 @@ function BayarForm({ saldo, nama, today, onDone }: { saldo: number; nama: string
               ? `Bayar sebagian: sisa ${rupiah(sisa)} tetap tercatat.`
               : 'Isi nominal yang dibayar.'}
       </p>
+      {dompet.length > 0 && <PilihDompet dompet={dompet} value={dompetId} onChange={setDompetId} masuk={saldo > 0} />}
       <PickerField label="Tanggal" type="date" required value={tanggal} onChange={setTanggal} />
       <SubmitButton busy={busy}>Catat pembayaran</SubmitButton>
     </form>
@@ -345,11 +410,17 @@ export function GantianView({
   nama,
   items,
   today,
+  dompet,
+  asal,
 }: {
   siap: boolean
   nama: string
   items: Gantian[]
   today: string
+  /** Kosong = pencatatan ke Uang belum siap (migrasi 0012). */
+  dompet: Dompet[]
+  /** id catatan gantian -> id dompet pengeluarannya. */
+  asal: Record<string, string>
 }) {
   const { track } = useFeedback()
   const [sheet, setSheet] = useState<'catat' | 'bayar' | 'nama' | null>(null)
@@ -473,6 +544,8 @@ export function GantianView({
           initial={editing}
           nama={nama}
           today={today}
+          dompet={dompet}
+          dompetAwal={editing ? (asal[editing.id] ?? '') : (dompet[0]?.id ?? '')}
           onDone={() => {
             setSheet(null)
             setPage(0)
@@ -480,7 +553,7 @@ export function GantianView({
         />
       </Sheet>
       <Sheet open={sheet === 'bayar'} title="Bayar" onClose={() => setSheet(null)}>
-        <BayarForm saldo={saldo} nama={nama} today={today} onDone={() => setSheet(null)} />
+        <BayarForm saldo={saldo} nama={nama} today={today} dompet={dompet} onDone={() => setSheet(null)} />
       </Sheet>
       <Sheet open={sheet === 'nama'} title="Ganti Nama" onClose={() => setSheet(null)}>
         <NamaForm nama={nama} onDone={() => setSheet(null)} />
@@ -557,7 +630,7 @@ export function GantianView({
       <ConfirmSheet
         open={deleting !== null}
         title="Hapus catatan?"
-        message={deleting ? `"${judul(deleting)}" (${rupiah(nilai(deleting))}) akan dihapus permanen dan saldo dihitung ulang.` : ''}
+        message={deleting ? `"${judul(deleting)}" (${rupiah(nilai(deleting))}) akan dihapus permanen dan saldo dihitung ulang.${asal[deleting.id] ? ' Catatannya di Uang ikut dihapus.' : ''}` : ''}
         confirmLabel="Hapus"
         danger
         onClose={() => setDeleting(null)}

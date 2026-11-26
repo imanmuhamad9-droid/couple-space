@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { CekWajib } from '@/components/CekWajib'
 import { FeedbackProvider } from '@/components/Feedback'
 import { APP_NAME } from '@/lib/constants'
 import './globals.css'
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id">
       <body>
         <FeedbackProvider>{children}</FeedbackProvider>
+        <CekWajib />
       </body>
     </html>
   )

@@ -93,3 +93,42 @@ textarea {
 .leaflet-container {
   font-family: inherit;
 }
+
+/* Kolom wajib: bintang merah di judulnya (otomatis dari atribut `required`). */
+label:has(input:required, select:required, textarea:required) > span:first-child::after {
+  content: ' *';
+  color: var(--color-del);
+}
+
+/* Wajib tapi belum diisi saat disubmit (lihat components/CekWajib.tsx). */
+label[data-salah] > input,
+label[data-salah] > select,
+label[data-salah] > textarea,
+label[data-salah] > span:nth-child(2) {
+  border-color: var(--color-del);
+  animation: getar 0.35s ease-in-out;
+}
+label[data-salah]::after {
+  content: attr(data-salah);
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-del);
+}
+
+@keyframes getar {
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  label[data-salah] > * {
+    animation: none !important;
+  }
+}

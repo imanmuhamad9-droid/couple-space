@@ -92,7 +92,7 @@ export function TransaksiForm({
   )
 
   const pilihDompet = (value: string, onChange: (id: string) => void) => (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className={inputCls}>
+    <select required value={value} onChange={(e) => onChange(e.target.value)} className={inputCls}>
       {dompet.map((d) => (
         <option key={d.id} value={d.id}>
           {d.nama}
@@ -130,7 +130,7 @@ export function TransaksiForm({
         <Field label="Dompet">{pilihDompet(dompetId, setDompetId)}</Field>
       )}
 
-      <Field label={jenis === 'keluar' ? 'Belanja apa' : jenis === 'masuk' ? 'Dari mana' : 'Catatan (opsional)'}>
+      <Field label={jenis === 'keluar' ? 'Belanja apa' : jenis === 'masuk' ? 'Dari mana' : 'Catatan'}>
         <input
           required={jenis !== 'pindah'}
           maxLength={200}
