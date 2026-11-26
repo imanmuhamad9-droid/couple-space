@@ -31,8 +31,8 @@ export function parseCoords(text: string): Coords | null {
       if (c) return c
     }
   }
-  // Link tempat Google tanpa koordinat: `!1s0x<cell>:0x<id>`. Bagian pertama adalah kode sel S2 yang bisa didekode.
-  const ftid = s.match(/!1s(0x[0-9a-f]+):0x[0-9a-f]+/i)
+  // Link tempat Google tanpa koordinat: `!1s0x<cell>:0x<id>` (web) atau `ftid=0x<cell>:0x<id>` (aplikasi HP). Bagian pertama adalah kode sel S2 yang bisa didekode.
+  const ftid = s.match(/(?:!1s|[?&]ftid=)(0x[0-9a-f]+):0x[0-9a-f]+/i)
   if (ftid) return s2ToCoords(BigInt(ftid[1]))
   return null
 }

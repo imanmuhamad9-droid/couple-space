@@ -48,3 +48,11 @@ describe('haversineKm', () => {
     expect(haversineKm({ lat: 1, lng: 1 }, { lat: 1, lng: 1 })).toBe(0)
   })
 })
+
+describe('link share dari aplikasi Google Maps HP', () => {
+  it('koordinat diambil dari ftid', () => {
+    const c = parseCoords('https://maps.google.com?q=Nama+Tempat,+Jalan+No.16&ftid=0x2e69fa9233083fb3:0x31e5a04527dc0c33&entry=gps')
+    expect(c?.lat).toBeCloseTo(-6.2745, 2)
+    expect(c?.lng).toBeCloseTo(106.7049, 2)
+  })
+})
