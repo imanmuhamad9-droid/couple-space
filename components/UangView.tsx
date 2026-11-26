@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Handshake, Pencil, Plus, Trash2 } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type UIEvent } from 'react'
 import { deleteDompet, saveDompet, urutkanDompet } from '@/app/actions/dompet'
 import { deleteTransaksi } from '@/app/actions/transaksi'
@@ -328,7 +329,19 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
 
   return (
     <>
-      <PageHeader title="Uang" info="uang" />
+      <PageHeader
+        title="Uang"
+        info="uang"
+        right={
+          <Link
+            href="/gantian"
+            aria-label="Gantian (saling talangin)"
+            className="grid size-8 place-items-center rounded-full bg-gray-200 text-muted"
+          >
+            <Handshake size={16} />
+          </Link>
+        }
+      />
 
       {/* Kartu dompet: geser ke samping. Tekan lama kartu dompet lalu geser untuk mengubah urutan. */}
       <div

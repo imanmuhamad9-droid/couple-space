@@ -75,4 +75,13 @@ export const KETERANGAN = {
     'Saat mengetik keterangan transaksi baru, muncul saran dari yang pernah kamu catat. Tekan satu saran untuk mengisi keterangan, jumlah, dan dompetnya.',
     'Tekan panah di atas untuk melihat periode lain. Tekan satu transaksi untuk edit atau hapus.',
   ],
+  gantian: [
+    'Catatan saling talangin berdua. Saldo saling mengurangi otomatis, jadi tinggal lihat siapa harus bayar berapa.',
+    'Catat: pilih siapa yang bayar, jumlah, untuk apa, lalu "Talangin penuh" atau "Bagi dua".',
+    'Bayar bisa kapan saja, semua atau sebagian. Sisanya tetap tercatat.',
+    '"Kirim rekap ke WA" berisi saldo dan catatan sejak terakhir impas.',
+    'Gantian berdiri sendiri: tidak mengubah transaksi atau saldo dompet.',
+    'Tekan satu catatan untuk edit atau hapus. Pembayaran hanya bisa dihapus.',
+    'Tekan nama di kartu saldo untuk menggantinya.',
+  ],
 } as const

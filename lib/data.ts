@@ -1,3 +1,4 @@
+import type { Gantian } from './gantian'
 // Pembacaan data (server only). Bukan Server Action, jadi tidak jadi endpoint.
 import { FOTO_BUCKET, FOTO_URL_TTL } from './constants'
 import { hhmm } from './format'
@@ -145,4 +146,40 @@ export async function listDompet(): Promise<Dompet[]> {
     jenis: (['bulanan', 'tabungan', 'liburan'].includes(r.jenis) ? r.jenis : null) as Dompet['jenis'],
     hari: r.hari === null || r.hari === undefined ? null : Number(r.hari),
   }))
+}
+
+/**
+ * Semua catatan gantian (terbaru di atas) dan nama lawannya. Diambil per 1000 baris supaya saldo
+ * tidak terpotong batas bawaan Supabase. `siap: false` = migrasi 0009 belum dijalankan.
+ */
+export async function listGantian(): Promise<{ siap: boolean; nama: string; items: Gantian[] }> {
+  const setting = await admin().from('gantian_setting').select('nama').limit(1)
+  if (setting.error) {
+    if (/gantian/.test(setting.error.message)) return { siap: false, nama: 'Adik', items: [] }
+    throw new Error(setting.error.message)
+  }
+  const items: Gantian[] = []
+  for (let from = 0; ; from += 1000) {
+    const res = await admin()
+      .from('gantian')
+      .select('*')
+      .order('tanggal', { ascending: false })
+      .order('created_at', { ascending: false })
+      .order('id')
+      .range(from, from + 999)
+    if (res.error) throw new Error(res.error.message)
+    items.push(
+      ...(res.data ?? []).map((r) => ({
+        id: r.id as string,
+        tanggal: r.tanggal as string,
+        jenis: r.jenis as Gantian['jenis'],
+        pelaku: r.pelaku as Gantian['pelaku'],
+        jumlah: Number(r.jumlah),
+        bagi: Boolean(r.bagi),
+        keterangan: r.keterangan as string,
+      })),
+    )
+    if ((res.data?.length ?? 0) < 1000) break
+  }
+  return { siap: true, nama: (setting.data?.[0]?.nama as string | undefined) ?? 'Adik', items }
 }
