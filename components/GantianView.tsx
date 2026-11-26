@@ -183,7 +183,7 @@ function CatatForm({
         <Pilihan
           value={hitung}
           onChange={setHitung}
-          opsi={[['penuh', 'Talangin penuh'], ['bagi', 'Bagi dua'], ['rinci', 'Rincian']]}
+          opsi={[['penuh', 'Penuh'], ['bagi', 'Bagi dua'], ['rinci', 'Struk']]}
         />
       </div>
       <Field label="Untuk apa">
@@ -440,7 +440,7 @@ export function GantianView({
   const sub = (g: Gantian) =>
     g.jenis === 'bayar'
       ? 'Pelunasan'
-      : `${siapa(g.pelaku)} yang bayar ${rupiah(g.jumlah)}${g.bagi ? ' · bagi dua' : g.rincian?.length ? ' · rincian' : ''}`
+      : `${siapa(g.pelaku)} yang bayar ${rupiah(g.jumlah)}${g.bagi ? ' · bagi dua' : g.rincian?.length ? ' · struk' : ''}`
   // Hijau = menambah piutangku, merah = menambah utangku, biru = pelunasan.
   const warna = (g: Gantian) => (g.jenis === 'bayar' ? 'text-upload' : g.pelaku === 'aku' ? 'text-done' : 'text-del')
 
@@ -573,7 +573,7 @@ export function GantianView({
                     ...(selected.jenis === 'talang'
                       ? [
                           ['Total', rupiah(selected.jumlah)],
-                          ['Hitungan', selected.rincian?.length ? 'Rincian' : selected.bagi ? 'Bagi dua' : 'Talangin penuh'],
+                          ['Hitungan', selected.rincian?.length ? 'Struk' : selected.bagi ? 'Bagi dua' : 'Penuh'],
                         ]
                       : [['Jenis', 'Pelunasan']]),
                   ] as string[][]
