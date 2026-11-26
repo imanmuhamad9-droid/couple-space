@@ -13,6 +13,7 @@ import { bulananHarian, geser, jatahInfo, labelPeriode, liburanInfo, milikDompet
 import { pindahUrut } from '@/lib/urut'
 import { useFeedback } from './Feedback'
 import { GrafikMinggu } from './GrafikMinggu'
+import { IkonDompet } from './IkonDompet'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { TransaksiForm } from './TransaksiForm'
 import { Empty, Field, inputCls, PageHeader, Pagination, SearchBox, SubmitButton } from './ui'
@@ -438,7 +439,10 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
                 digeser ? 'z-20 shadow-2xl' : 'shadow-md'
               } ${k.dompet ? 'cursor-pointer' : ''}`}
             >
-              <p className="truncate pr-24 text-sm opacity-85">{k.dompet ? k.dompet.nama : 'Keseluruhan'}</p>
+              <p className="flex items-center gap-1.5 pr-24 text-sm opacity-85">
+                <IkonDompet dompet={k.dompet} />
+                <span className="truncate">{k.dompet ? k.dompet.nama : 'Keseluruhan'}</span>
+              </p>
               <p className={`mt-0.5 truncate font-bold tabular-nums ${kompak ? 'text-lg' : 'text-3xl'}`}>
                 {saldo < 0 ? '−' : ''}
                 {rupiah(Math.abs(saldo))}
