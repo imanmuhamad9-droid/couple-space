@@ -77,9 +77,10 @@ export const KETERANGAN = {
   ],
   gantian: [
     'Catatan saling talangin berdua. Saldo saling mengurangi otomatis, jadi tinggal lihat siapa harus bayar berapa.',
-    'Catat: pilih siapa yang bayar, jumlah, untuk apa, lalu "Talangin penuh" atau "Bagi dua".',
-    'Bayar bisa kapan saja, semua atau sebagian. Sisanya tetap tercatat.',
-    '"Kirim rekap ke WA" berisi saldo dan catatan sejak terakhir impas.',
+    'Catat: pilih siapa yang bayar, lalu "Talangin penuh", "Bagi dua", atau "Rincian".',
+    'Rincian: isi tiap barang dan punya siapa (Berdua = dibagi dua). Kalau ada pajak, service, atau diskon, isi "Total di struk"; selisihnya dibagi sebanding belanja masing-masing.',
+    'Bayar bisa kapan saja. Nominal sudah terisi penuh; ubah angkanya kalau mau bayar sebagian, sisanya tetap tercatat.',
+    '"Rekap WA" berisi saldo dan catatan sejak terakhir impas.',
     'Gantian berdiri sendiri: tidak mengubah transaksi atau saldo dompet.',
     'Tekan satu catatan untuk edit atau hapus. Pembayaran hanya bisa dihapus.',
     'Tekan nama di kartu saldo untuk menggantinya.',

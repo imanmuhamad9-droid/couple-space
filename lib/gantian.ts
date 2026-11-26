@@ -2,6 +2,10 @@ import { formatTanggalSingkat, rupiah } from './format'
 
 export type Pelaku = 'aku' | 'dia'
 
+export type Punya = 'aku' | 'dia' | 'berdua'
+/** Satu baris struk; `harga` = total baris itu. */
+export type Barang = { nama: string; harga: number; punya: Punya }
+
 export type Gantian = {
   id: string
   tanggal: string
@@ -12,10 +16,29 @@ export type Gantian = {
   /** Hanya talang: true = bagi dua. */
   bagi: boolean
   keterangan: string
+  /** Rincian per barang; null/kosong = tidak dirinci. */
+  rincian?: Barang[] | null
 }
 
-/** Nilai yang mengubah saldo. Bagi dua: sisa rupiah ganjil ditanggung yang menalangi. */
-export function nilai(g: Pick<Gantian, 'jenis' | 'jumlah' | 'bagi'>): number {
+export const jumlahBarang = (rincian: Barang[]) => rincian.reduce((s, b) => s + b.harga, 0)
+
+/**
+ * Bagian `siapa` dari total struk, sebanding dengan harga barangnya (barang berdua dibagi dua).
+ * Selisih total struk dengan jumlah barang (pajak, service, diskon) otomatis ikut terbagi.
+ */
+export function bagianRincian(rincian: Barang[], total: number, siapa: Pelaku): number {
+  const semua = jumlahBarang(rincian)
+  if (semua <= 0) return 0
+  // dikali dua supaya barang "berdua" tetap bilangan bulat
+  const punyaku = rincian.reduce((s, b) => s + (b.punya === siapa ? 2 * b.harga : b.punya === 'berdua' ? b.harga : 0), 0)
+  return Number((BigInt(total) * BigInt(punyaku)) / BigInt(2 * semua))
+}
+
+/** Nilai yang mengubah saldo. Pembulatan ke bawah: sisa rupiah ditanggung yang menalangi. */
+export function nilai(g: Pick<Gantian, 'jenis' | 'jumlah' | 'bagi' | 'pelaku' | 'rincian'>): number {
+  if (g.jenis === 'talang' && g.rincian?.length) {
+    return bagianRincian(g.rincian, g.jumlah, g.pelaku === 'aku' ? 'dia' : 'aku')
+  }
   return g.jenis === 'talang' && g.bagi ? Math.floor(g.jumlah / 2) : g.jumlah
 }
 
@@ -52,7 +75,10 @@ export function rekapGantian(items: Gantian[], nama: string): string {
       g.jenis === 'bayar'
         ? `${siapa} bayar ${rupiah(g.jumlah)}`
         : `${g.keterangan}: ${rupiah(g.jumlah)} (${siapa} yang bayar${g.bagi ? ', bagi dua' : ''})`
-    return `- ${formatTanggalSingkat(g.tanggal)} ${apa}`
+    const pemilik = { aku: 'aku', dia: nama, berdua: 'berdua' }
+    const rinci = (g.rincian ?? []).map((b) => `\n   ${b.nama} ${rupiah(b.harga)} (${pemilik[b.punya]})`).join('')
+    const bagian = rinci ? `\n   Bagian ${g.pelaku === 'aku' ? nama : 'aku'}: ${rupiah(nilai(g))}` : ''
+    return `- ${formatTanggalSingkat(g.tanggal)} ${apa}${rinci}${bagian}`
   })
   return [
     '*Rekap Gantian*',

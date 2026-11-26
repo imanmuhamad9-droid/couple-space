@@ -177,6 +177,7 @@ export async function listGantian(): Promise<{ siap: boolean; nama: string; item
         jumlah: Number(r.jumlah),
         bagi: Boolean(r.bagi),
         keterangan: r.keterangan as string,
+        rincian: Array.isArray(r.rincian) ? (r.rincian as Gantian['rincian']) : null,
       })),
     )
     if ((res.data?.length ?? 0) < 1000) break

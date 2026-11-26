@@ -5,12 +5,18 @@ import { z } from 'zod'
 import { must, run } from '@/lib/action'
 import { listGantian } from '@/lib/data'
 import { kapitalAwal } from '@/lib/format'
-import { saldoGantian } from '@/lib/gantian'
+import { nilai, saldoGantian } from '@/lib/gantian'
 import { admin } from '@/lib/supabase-admin'
 
 const Tanggal = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Tanggal tidak valid')
 const Jumlah = z.number().int('Jumlah harus angka bulat').min(1, 'Isi jumlahnya').max(100_000_000_000_000)
 const Pelaku = z.enum(['aku', 'dia'], 'Pilih siapa yang bayar')
+
+const Barang = z.object({
+  nama: z.string().trim().min(1, 'Isi nama tiap barang').max(100, 'Nama barang terlalu panjang').transform(kapitalAwal),
+  harga: z.number().int('Harga harus angka bulat').min(1, 'Isi harga tiap barang').max(1_000_000_000_000),
+  punya: z.enum(['aku', 'dia', 'berdua'], 'Pilih punya siapa'),
+})
 
 const Talang = z.object({
   id: z.uuid().optional(),
@@ -18,13 +24,17 @@ const Talang = z.object({
   pelaku: Pelaku,
   jumlah: Jumlah,
   bagi: z.boolean(),
+  rincian: z.array(Barang).min(1, 'Tambahkan minimal satu barang').max(50, 'Maksimal 50 barang').nullable(),
   keterangan: z.string().trim().min(1, 'Isi untuk apa').max(200, 'Keterangan terlalu panjang').transform(kapitalAwal),
 })
 
 export async function saveTalang(input: z.input<typeof Talang>) {
   return run(async () => {
     const { id, ...v } = Talang.parse(input)
-    if (v.bagi && v.jumlah < 2) throw new Error('Jumlah terlalu kecil untuk dibagi dua')
+    if (v.rincian) v.bagi = false
+    if (nilai({ ...v, jenis: 'talang' }) < 1) {
+      throw new Error(v.rincian ? 'Tidak ada bagian yang perlu ditalangi' : 'Jumlah terlalu kecil untuk dibagi dua')
+    }
     if (id) must(await admin().from('gantian').update(v).eq('id', id).eq('jenis', 'talang'))
     else must(await admin().from('gantian').insert({ ...v, jenis: 'talang' }))
     revalidatePath('/', 'layout')

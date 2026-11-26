@@ -1,12 +1,22 @@
 'use client'
 
-import { ArrowLeft, Copy, Pencil, Plus, Send, Trash2 } from 'lucide-react'
+import { ArrowLeft, Copy, Pencil, Plus, Send, Trash2, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 import { bayarGantian, deleteGantian, saveNamaGantian, saveTalang } from '@/app/actions/gantian'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
 import { angka, formatTanggal, kapitalAwal, rupiah } from '@/lib/format'
-import { kalimatSaldo, nilai, rekapGantian, saldoGantian, type Gantian, type Pelaku } from '@/lib/gantian'
+import {
+  jumlahBarang,
+  kalimatSaldo,
+  nilai,
+  rekapGantian,
+  saldoGantian,
+  type Barang,
+  type Gantian,
+  type Pelaku,
+  type Punya,
+} from '@/lib/gantian'
 import { useFeedback } from './Feedback'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { Empty, Field, inputCls, PageHeader, Pagination, PickerField, SubmitButton } from './ui'
@@ -21,7 +31,7 @@ function Pilihan<T extends string>({
   opsi: [T, string][]
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className={`grid gap-2 ${opsi.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
       {opsi.map(([v, label]) => (
         <button
           key={v}
@@ -61,6 +71,11 @@ function InputRupiah({
   )
 }
 
+/** Baris struk selagi diketik: harga masih teks digit. */
+type Isian = { key: number; nama: string; harga: string; punya: Punya }
+
+const isianKosong = (key: number): Isian => ({ key, nama: '', harga: '', punya: 'aku' })
+
 function CatatForm({
   initial,
   nama,
@@ -76,18 +91,36 @@ function CatatForm({
   const [pelaku, setPelaku] = useState<Pelaku>(initial?.pelaku ?? 'aku')
   const [jumlah, setJumlah] = useState(initial ? String(initial.jumlah) : '')
   const [keterangan, setKeterangan] = useState(initial?.keterangan ?? '')
-  const [hitung, setHitung] = useState<'penuh' | 'bagi'>(initial?.bagi ? 'bagi' : 'penuh')
+  const [hitung, setHitung] = useState<'penuh' | 'bagi' | 'rinci'>(
+    initial?.rincian?.length ? 'rinci' : initial?.bagi ? 'bagi' : 'penuh',
+  )
+  const [barang, setBarang] = useState<Isian[]>(() =>
+    initial?.rincian?.length
+      ? initial.rincian.map((b, i) => ({ ...b, key: i, harga: String(b.harga) }))
+      : [isianKosong(0)],
+  )
+  // Total struk hanya diisi bila beda dari jumlah barang (pajak, service, diskon).
+  const [totalStruk, setTotalStruk] = useState(() =>
+    initial?.rincian?.length && initial.jumlah !== jumlahBarang(initial.rincian) ? String(initial.jumlah) : '',
+  )
   const [tanggal, setTanggal] = useState(initial?.tanggal ?? today)
   const [busy, setBusy] = useState(false)
 
   const bagi = hitung === 'bagi'
+  const rinci = hitung === 'rinci'
   const berutang = pelaku === 'aku' ? nama : 'Aku'
+  const rincian: Barang[] = barang.map((b) => ({ nama: b.nama, harga: Number(b.harga || 0), punya: b.punya }))
+  const subtotal = jumlahBarang(rincian)
+  const total = rinci ? Number(totalStruk || 0) || subtotal : Number(jumlah || 0)
+  const utang = nilai({ jenis: 'talang', jumlah: total, bagi, pelaku, rincian: rinci ? rincian : null })
+  const ubah = (key: number, isi: Partial<Isian>) =>
+    setBarang((list) => list.map((b) => (b.key === key ? { ...b, ...isi } : b)))
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
     const r = await track(
-      saveTalang({ id: initial?.id, tanggal, pelaku, jumlah: Number(jumlah || 0), bagi, keterangan }),
+      saveTalang({ id: initial?.id, tanggal, pelaku, jumlah: total, bagi, keterangan, rincian: rinci ? rincian : null }),
       'Tersimpan',
     )
     setBusy(false)
@@ -100,25 +133,116 @@ function CatatForm({
         <p className="mb-1 text-sm font-medium text-muted">Siapa yang bayar</p>
         <Pilihan value={pelaku} onChange={setPelaku} opsi={[['aku', 'Aku'], ['dia', nama]]} />
       </div>
-      <InputRupiah label="Jumlah (Rp)" value={jumlah} onChange={setJumlah} />
+      <div>
+        <p className="mb-1 text-sm font-medium text-muted">Hitungannya</p>
+        <Pilihan
+          value={hitung}
+          onChange={setHitung}
+          opsi={[['penuh', 'Talangin penuh'], ['bagi', 'Bagi dua'], ['rinci', 'Rincian']]}
+        />
+      </div>
       <Field label="Untuk apa">
         <input
           required
           maxLength={200}
           value={keterangan}
           onChange={(e) => setKeterangan(kapitalAwal(e.target.value))}
-          placeholder="Contoh: Makan malam"
+          placeholder={rinci ? 'Contoh: Struk restoran' : 'Contoh: Makan malam'}
           className={inputCls}
         />
       </Field>
-      <div>
-        <Pilihan value={hitung} onChange={setHitung} opsi={[['penuh', 'Talangin penuh'], ['bagi', 'Bagi dua']]} />
-        {jumlah !== '' && (
-          <p className="mt-1 text-xs text-muted">
-            {berutang} berutang {rupiah(nilai({ jenis: 'talang', jumlah: Number(jumlah), bagi }))}
-          </p>
-        )}
-      </div>
+
+      {rinci ? (
+        <>
+          {barang.map((b, i) => (
+            <div key={b.key} className="space-y-2 rounded-2xl border border-line p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">Barang {i + 1}</p>
+                {barang.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setBarang((list) => list.filter((x) => x.key !== b.key))}
+                    aria-label={`Hapus barang ${i + 1}`}
+                    className="grid size-8 place-items-center rounded-full bg-del/10 text-del"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
+              </div>
+              <Field label="Nama barang">
+                <input
+                  required
+                  maxLength={100}
+                  value={b.nama}
+                  onChange={(e) => ubah(b.key, { nama: kapitalAwal(e.target.value) })}
+                  className={inputCls}
+                />
+              </Field>
+              <InputRupiah label="Harga (Rp)" value={b.harga} onChange={(harga) => ubah(b.key, { harga })} />
+              <div>
+                <p className="mb-1 text-sm font-medium text-muted">Punya siapa</p>
+                <Pilihan
+                  value={b.punya}
+                  onChange={(punya) => ubah(b.key, { punya })}
+                  opsi={[['aku', 'Aku'], ['dia', nama], ['berdua', 'Berdua']]}
+                />
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setBarang((list) => [...list, isianKosong(Math.max(...list.map((x) => x.key)) + 1)])}
+            disabled={barang.length >= 50}
+            className="h-11 w-full rounded-xl border border-dashed border-line text-sm font-semibold text-upload"
+          >
+            + Barang lain
+          </button>
+          <div>
+            <Field label="Total di struk (Rp, opsional)">
+              <input
+                inputMode="numeric"
+                autoComplete="off"
+                value={totalStruk ? angka(Number(totalStruk)) : ''}
+                onChange={(e) => setTotalStruk(e.target.value.replace(/\D/g, '').slice(0, 14))}
+                placeholder={subtotal ? angka(subtotal) : '0'}
+                className={inputCls}
+              />
+            </Field>
+            <p className="mt-1 text-xs text-muted">Isi kalau ada pajak, service, atau diskon.</p>
+          </div>
+          {subtotal > 0 && (
+            <dl className="space-y-1 rounded-xl bg-gray-100 p-3 text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Jumlah barang</dt>
+                <dd className="tabular-nums">{rupiah(subtotal)}</dd>
+              </div>
+              {total !== subtotal && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">{total > subtotal ? 'Pajak / service' : 'Diskon'}</dt>
+                  <dd className="tabular-nums">{rupiah(Math.abs(total - subtotal))}</dd>
+                </div>
+              )}
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Total dibayar</dt>
+                <dd className="tabular-nums">{rupiah(total)}</dd>
+              </div>
+              <div className="flex justify-between gap-3 font-semibold">
+                <dt>{berutang} berutang</dt>
+                <dd className="tabular-nums">{rupiah(utang)}</dd>
+              </div>
+            </dl>
+          )}
+        </>
+      ) : (
+        <div>
+          <InputRupiah label="Jumlah (Rp)" value={jumlah} onChange={setJumlah} />
+          {jumlah !== '' && (
+            <p className="mt-1 text-xs text-muted">
+              {berutang} berutang {rupiah(utang)}
+            </p>
+          )}
+        </div>
+      )}
       <PickerField label="Tanggal" type="date" required value={tanggal} onChange={setTanggal} />
       <SubmitButton busy={busy}>{initial ? 'Simpan perubahan' : 'Simpan'}</SubmitButton>
     </form>
@@ -154,12 +278,6 @@ function BayarForm({ saldo, nama, today, onDone }: { saldo: number; nama: string
     }
   }
 
-  const cepat = (label: string, n: number) => (
-    <button type="button" onClick={() => setJumlah(String(n))} className="h-10 rounded-xl bg-gray-100 text-sm font-semibold">
-      {label}
-    </button>
-  )
-
   return (
     <form onSubmit={submit} className="space-y-3">
       <p className="text-sm text-muted">
@@ -178,12 +296,14 @@ function BayarForm({ saldo, nama, today, onDone }: { saldo: number; nama: string
           <Copy size={16} /> Salin
         </button>
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        {cepat('Semua', total)}
-        {cepat('Setengah', Math.ceil(total / 2))}
-      </div>
       <p className={`text-xs ${sisa < 0 ? 'text-del' : 'text-muted'}`}>
-        {sisa < 0 ? 'Melebihi yang harus dibayar.' : sisa === 0 ? 'Setelah ini impas.' : `Sisa ${rupiah(sisa)} tetap tercatat.`}
+        {sisa < 0
+          ? 'Melebihi yang harus dibayar.'
+          : sisa === 0
+            ? 'Bayar semua: setelah ini impas.'
+            : jumlah
+              ? `Bayar sebagian: sisa ${rupiah(sisa)} tetap tercatat.`
+              : 'Isi nominal yang dibayar.'}
       </p>
       <PickerField label="Tanggal" type="date" required value={tanggal} onChange={setTanggal} />
       <SubmitButton busy={busy}>Catat pembayaran</SubmitButton>
@@ -247,7 +367,9 @@ export function GantianView({
   const siapa = (p: Pelaku) => (p === 'aku' ? 'Aku' : nama)
   const judul = (g: Gantian) => (g.jenis === 'bayar' ? `${siapa(g.pelaku)} bayar` : g.keterangan)
   const sub = (g: Gantian) =>
-    g.jenis === 'bayar' ? 'Pelunasan' : `${siapa(g.pelaku)} yang bayar ${rupiah(g.jumlah)}${g.bagi ? ' · bagi dua' : ''}`
+    g.jenis === 'bayar'
+      ? 'Pelunasan'
+      : `${siapa(g.pelaku)} yang bayar ${rupiah(g.jumlah)}${g.bagi ? ' · bagi dua' : g.rincian?.length ? ' · rincian' : ''}`
   // Hijau = menambah piutangku, merah = menambah utangku, biru = pelunasan.
   const warna = (g: Gantian) => (g.jenis === 'bayar' ? 'text-upload' : g.pelaku === 'aku' ? 'text-done' : 'text-del')
 
@@ -290,34 +412,29 @@ export function GantianView({
         <p className="mt-0.5 text-3xl font-bold tabular-nums">{rupiah(Math.abs(saldo))}</p>
       </section>
 
-      <div className="mx-3 mt-3 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => catat(null)}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-upload font-semibold text-white"
-        >
-          <Plus size={20} /> Catat
+      <div className="mx-3 mt-3 grid grid-cols-3 gap-2">
+        <button type="button" onClick={() => catat(null)} className="flex h-12 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold bg-upload text-white">
+          <Plus size={18} /> Catat
         </button>
         <button
           type="button"
           onClick={() => setSheet('bayar')}
           disabled={saldo === 0}
-          className="h-12 rounded-xl bg-done font-semibold text-white disabled:opacity-40"
+          className="flex h-12 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold bg-done text-white disabled:opacity-40"
         >
-          Bayar
+          <Wallet size={17} /> Bayar
         </button>
-      </div>
-
-      {items.length > 0 && (
         <a
-          href={`https://wa.me/?text=${encodeURIComponent(rekapGantian(items, nama))}`}
+          href={items.length ? `https://wa.me/?text=${encodeURIComponent(rekapGantian(items, nama))}` : undefined}
           target="_blank"
           rel="noopener noreferrer"
-          className="mx-3 mt-2 flex h-11 items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-done shadow-sm"
+          aria-label="Kirim rekap ke WhatsApp"
+          aria-disabled={items.length === 0}
+          className={`flex h-12 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold bg-white text-done shadow-sm ${items.length ? '' : 'opacity-40'}`}
         >
-          <Send size={16} /> Kirim rekap ke WA
+          <Send size={16} /> Rekap WA
         </a>
-      )}
+      </div>
 
       <div className="mt-4">
         {items.length === 0 ? (
@@ -375,9 +492,38 @@ export function GantianView({
             <div>
               <p className={`text-2xl font-bold tabular-nums ${warna(selected)}`}>{rupiah(nilai(selected))}</p>
               <p className="mt-1 break-words font-medium">{judul(selected)}</p>
-              <p className="mt-0.5 text-sm text-muted">
-                {sub(selected)} · {formatTanggal(selected.tanggal)}
-              </p>
+              <dl className="mt-3 divide-y divide-line text-sm">
+                {(
+                  [
+                    ['Tanggal', formatTanggal(selected.tanggal)],
+                    ['Yang bayar', siapa(selected.pelaku)],
+                    ...(selected.jenis === 'talang'
+                      ? [
+                          ['Total', rupiah(selected.jumlah)],
+                          ['Hitungan', selected.rincian?.length ? 'Rincian' : selected.bagi ? 'Bagi dua' : 'Talangin penuh'],
+                        ]
+                      : [['Jenis', 'Pelunasan']]),
+                  ] as string[][]
+                ).map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-3 py-1.5">
+                    <dt className="text-muted">{k}</dt>
+                    <dd className="text-right tabular-nums">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              {!!selected.rincian?.length && (
+                <ul className="mt-3 space-y-2 rounded-xl bg-gray-100 p-3 text-sm">
+                  {selected.rincian.map((b, i) => (
+                    <li key={i} className="flex justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block break-words font-medium">{b.nama}</span>
+                        <span className="block text-xs text-muted">{b.punya === 'berdua' ? 'Berdua' : siapa(b.punya)}</span>
+                      </span>
+                      <span className="shrink-0 tabular-nums">{rupiah(b.harga)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className={`grid gap-3 ${selected.jenis === 'talang' ? 'grid-cols-2' : ''}`}>
               {selected.jenis === 'talang' && (
