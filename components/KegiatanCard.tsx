@@ -44,6 +44,7 @@ export function KegiatanCard({
   onOpenDetail,
 }: Props) {
   const done = item.status === 'terlaksana'
+  const berwarna = active || terlewat
   const linkLokasi = isHttpLink(item.lokasi)
   // Tujuan Maps: tempat dari Database, atau lokasi yang isinya link. Teks lokasi biasa tetap tampil sebagai teks.
   const mapsLink = mapsHref ?? (linkLokasi ? item.lokasi.trim() : undefined)
@@ -54,7 +55,9 @@ export function KegiatanCard({
       style={style}
       {...dragProps}
       className={`rounded-xl px-2.5 py-2 transition-shadow ${
-        active ? 'bg-gradient-to-br from-blue-700 via-blue-600 to-sky-400 text-white shadow-md' : 'bg-white shadow-sm'
+        terlewat
+          ? 'bg-gradient-to-br from-red-700 to-red-500 text-white shadow-md'
+          : active ? 'bg-gradient-to-br from-blue-700 via-blue-600 to-sky-400 text-white shadow-md' : 'bg-white shadow-sm'
       } ${mode === 'rencana' ? 'select-none [-webkit-touch-callout:none]' : ''} ${
         dragging ? 'relative z-20 scale-[1.02] shadow-2xl' : ''
       }`}
@@ -62,7 +65,7 @@ export function KegiatanCard({
       <div className="flex items-start gap-2">
         <span
           className={`mt-px shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold tabular-nums ${
-            active ? 'bg-white/20' : 'bg-gray-100'
+            berwarna ? 'bg-white/20' : 'bg-gray-100'
           }`}
         >
           {item.jam}
@@ -74,14 +77,14 @@ export function KegiatanCard({
         >
           {item.kegiatan}
         </h3>
-        {active && (
+        {active && !terlewat && (
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold">
             <span className="size-1.5 animate-pulse rounded-full bg-white" />
             Sekarang
           </span>
         )}
-        {terlewat && !active && (
-          <span className="shrink-0 rounded-full bg-del/10 px-2 py-0.5 text-[11px] font-semibold text-del">Terlewat</span>
+        {terlewat && (
+          <span className="shrink-0 rounded-full bg-white/25 px-2 py-0.5 text-[11px] font-semibold">Terlewat</span>
         )}
         {done && (
           <span className="shrink-0 rounded-full bg-done/10 px-2 py-0.5 text-[11px] font-semibold text-done">
@@ -91,7 +94,7 @@ export function KegiatanCard({
       </div>
 
       {(textLokasi || item.budget > 0) && (
-        <p className={`mt-1 flex items-center gap-1 text-xs ${active ? 'text-white/90' : 'text-muted'}`}>
+        <p className={`mt-1 flex items-center gap-1 text-xs ${berwarna ? 'text-white/90' : 'text-muted'}`}>
           {textLokasi && (
             <>
               <MapPin size={13} className="shrink-0" />
@@ -110,7 +113,7 @@ export function KegiatanCard({
             target="_blank"
             rel="noopener noreferrer"
             className={`flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-xs font-medium ${
-              active ? 'bg-white/20 text-white' : 'bg-upload/10 text-upload'
+              berwarna ? 'bg-white/20 text-white' : 'bg-upload/10 text-upload'
             }`}
           >
             <ExternalLink size={14} /> Buka di Maps
@@ -118,7 +121,7 @@ export function KegiatanCard({
         )}
 
         <div className="ml-auto flex shrink-0 gap-1.5">
-          <UploadButton kind="kegiatan" ownerId={item.id} light={active} allowPdf />
+          <UploadButton kind="kegiatan" ownerId={item.id} light={berwarna} allowPdf />
           {mode === 'rencana' && (
             <>
               <button
@@ -133,7 +136,7 @@ export function KegiatanCard({
                 type="button"
                 aria-label="Edit"
                 onClick={onEdit}
-                className={`${icon} ${active ? 'bg-white/20 text-white' : 'bg-edit/10 text-edit'}`}
+                className={`${icon} ${berwarna ? 'bg-white/20 text-white' : 'bg-edit/10 text-edit'}`}
               >
                 <Pencil size={15} />
               </button>
@@ -141,7 +144,7 @@ export function KegiatanCard({
                 type="button"
                 aria-label="Hapus"
                 onClick={onDelete}
-                className={`${icon} ${active ? 'bg-white/20 text-white' : 'bg-del/10 text-del'}`}
+                className={`${icon} ${berwarna ? 'bg-white/20 text-white' : 'bg-del/10 text-del'}`}
               >
                 <Trash2 size={15} />
               </button>
@@ -155,7 +158,7 @@ export function KegiatanCard({
           type="button"
           onClick={onOpenDetail}
           className={`mt-1.5 flex h-9 w-full items-center justify-between rounded-lg px-2.5 text-xs font-medium active:opacity-80 ${
-            active ? 'bg-white/20 text-white' : 'bg-gray-100 text-ink'
+            berwarna ? 'bg-white/20 text-white' : 'bg-gray-100 text-ink'
           }`}
         >
           <span className="flex items-center gap-1.5">

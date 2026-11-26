@@ -67,24 +67,38 @@ export function moveItem(items: Item[], id: string, toDay: string, toIdx: number
     .map((x) => ({ id: x.id, tanggal: x.tanggal, jam: x.jam }))
 }
 
-/** Kegiatan terakhir di satu hari dianggap berlangsung selama ini (menit). */
-export const DURASI_TERAKHIR = 120
+/** Jam mulai (menit) semua kegiatan hari ini yang sudah tiba, termasuk yang sudah diceklis. */
+function sudahMulai(items: { tanggal: string; jam: string }[], tanggal: string, menit: number, selesai: string[]) {
+  return [...items.filter((x) => x.tanggal === tanggal).map((x) => x.jam), ...selesai]
+    .map(toMin)
+    .filter((m) => m <= menit)
+}
 
 /**
- * Id kegiatan yang sedang berlangsung: dimulai pada jamnya dan berakhir saat kegiatan
- * berikutnya di hari yang sama mulai. Kegiatan terakhir hari itu berlangsung DURASI_TERAKHIR menit.
+ * Id kegiatan yang sedang berlangsung: dimulai pada jamnya dan berakhir saat kegiatan berikutnya di hari
+ * yang sama mulai. Kegiatan terakhir hari itu dianggap berlangsung sampai hari berganti.
+ * `selesai` = jam kegiatan hari ini yang sudah diceklis (tidak ada lagi di daftar Rencana).
  */
 export function kegiatanBerlangsung(
   items: { id: string; tanggal: string; jam: string }[],
   tanggal: string,
   menit: number,
+  selesai: string[] = [],
 ): string | null {
-  const hari = items.filter((x) => x.tanggal === tanggal).sort((a, b) => a.jam.localeCompare(b.jam))
-  let aktif: string | null = null
-  hari.forEach((x, i) => {
-    const mulai = toMin(x.jam)
-    const selesai = hari[i + 1] ? toMin(hari[i + 1].jam) : mulai + DURASI_TERAKHIR
-    if (menit >= mulai && menit < selesai) aktif = x.id
-  })
-  return aktif
+  const mulai = sudahMulai(items, tanggal, menit, selesai)
+  if (mulai.length === 0) return null
+  const terakhir = Math.max(...mulai)
+  return items.find((x) => x.tanggal === tanggal && toMin(x.jam) === terakhir)?.id ?? null
+}
+
+/** Belum diceklis padahal harinya sudah lewat, atau kegiatan berikutnya di hari ini sudah mulai. */
+export function sudahTerlewat(
+  item: { tanggal: string; jam: string },
+  items: { tanggal: string; jam: string }[],
+  tanggal: string,
+  menit: number,
+  selesai: string[] = [],
+): boolean {
+  if (item.tanggal !== tanggal) return item.tanggal < tanggal
+  return sudahMulai(items, tanggal, menit, selesai).some((m) => m > toMin(item.jam))
 }

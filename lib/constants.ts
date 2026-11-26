@@ -44,7 +44,8 @@ export const PDF_MAX_BYTES = 4 * 1024 * 1024
 export const KETERANGAN = {
   rencana: [
     'Tahan kartu sebentar lalu geser untuk mengubah urutan.',
-    'Label "Terlewat" = tanggalnya sudah lewat tapi belum diceklis atau dihapus.',
+    'Kartu merah "Terlewat" = belum diceklis padahal kegiatan berikutnya sudah mulai, atau harinya sudah lewat. Kegiatan terakhir hari itu dianggap masih berlangsung sampai ganti hari.',
+    'Angka di samping tanggal = jumlah rencana hari itu.',
     'Geser ke hari lain untuk memindahkan kegiatan ke tanggal tersebut.',
     'Jam akan menyesuaikan otomatis, jadi tidak ada yang bertabrakan.',
     'Ikon klip biru: upload foto atau PDF (PDF maks 4 MB). Tekan baris "lampiran" di kartu untuk melihat detail, foto, dan PDF-nya.',
@@ -54,6 +55,7 @@ export const KETERANGAN = {
   ],
   histori: [
     'Kegiatan yang sudah terlaksana, terbaru di atas.',
+    'Angka di samping tanggal = total uang hari itu, dari "Habis berapa?" saat ceklis (atau budget rencana kalau dikosongkan).',
     'Kegiatan di Histori tidak bisa diedit atau dihapus.',
     'Lampiran dari Rencana tidak ikut pindah. Foto atau PDF yang kamu unggah di sini yang tersimpan.',
     'Tekan baris "lampiran" untuk melihat detail. Tekan foto untuk memperbesar, tekan PDF untuk membukanya.',
@@ -63,7 +65,7 @@ export const KETERANGAN = {
     'Tekan "Jadikan rencana" untuk membuat rencana ke tempat itu; lokasinya sudah terisi.',
     'Tekan tombol lokasi untuk menghitung jarak tiap tempat dari posisimu.',
     'Tekan "Buka di Maps" untuk langsung membuka lokasi di Google Maps.',
-    'Jumlah kunjungan dihitung otomatis dari kegiatan terlaksana di Histori yang tempatnya kamu pilih dari rekomendasi.',
+    'Angka di pojok kanan atas kartu = jumlah kunjungan ("-" = belum pernah). Dihitung otomatis dari kegiatan terlaksana di Histori yang tempatnya kamu pilih dari rekomendasi.',
     'Tekan foto untuk melihat semua fotonya dan menggeser ke samping.',
   ],
   uang: [

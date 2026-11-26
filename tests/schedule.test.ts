@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { kegiatanBerlangsung, moveItem, type Change, type Item } from '../lib/schedule'
+import { kegiatanBerlangsung, moveItem, sudahTerlewat, type Change, type Item } from '../lib/schedule'
 
 const D1 = '2026-11-24'
 const D2 = '2026-11-25'
@@ -108,9 +108,17 @@ describe('kegiatanBerlangsung', () => {
     expect(kegiatanBerlangsung(hari, D1, m(9, 59))).toBe('a')
     expect(kegiatanBerlangsung(hari, D1, m(10))).toBe('b')
   })
-  it('kegiatan terakhir berlangsung 2 jam', () => {
-    expect(kegiatanBerlangsung(hari, D1, m(14, 59))).toBe('c')
-    expect(kegiatanBerlangsung(hari, D1, m(15))).toBeNull()
+  it('kegiatan terakhir berlangsung sampai hari berganti', () => expect(kegiatanBerlangsung(hari, D1, m(23, 59))).toBe('c'))
+  it('terlewat setelah kegiatan berikutnya mulai', () => {
+    expect(sudahTerlewat(hari[0], hari, D1, m(9, 59))).toBe(false)
+    expect(sudahTerlewat(hari[0], hari, D1, m(10))).toBe(true)
+    expect(sudahTerlewat(hari[2], hari, D1, m(23))).toBe(false)
+    expect(sudahTerlewat(hari[2], hari, D2, m(0))).toBe(true)
+  })
+  it('kegiatan berikutnya yang sudah diceklis tetap dihitung', () => {
+    const sisa = [hari[0]]
+    expect(kegiatanBerlangsung(sisa, D1, m(11), ['10:00'])).toBeNull()
+    expect(sudahTerlewat(sisa[0], sisa, D1, m(11), ['10:00'])).toBe(true)
   })
   it('hari lain tidak ikut', () => expect(kegiatanBerlangsung(hari, D2, m(8))).toBeNull())
 })

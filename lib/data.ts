@@ -68,6 +68,13 @@ export async function listKegiatan(status: Status): Promise<Kegiatan[]> {
   }))
 }
 
+/** Jam kegiatan pada tanggal ini yang sudah diceklis, untuk menentukan rencana yang terlewat. */
+export async function jamSelesai(tanggal: string): Promise<string[]> {
+  const res = await admin().from('kegiatan').select('jam').eq('status', 'terlaksana').eq('tanggal', tanggal)
+  if (res.error) throw new Error(res.error.message)
+  return (res.data ?? []).map((r) => hhmm(r.jam) ?? '00:00')
+}
+
 export async function listTempat(): Promise<Tempat[]> {
   const [res, kunjungan] = await Promise.all([
     admin().from('tempat').select('*, foto(*)').order('nama', { ascending: true }),

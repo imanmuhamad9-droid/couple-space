@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarPlus, CheckCheck, ExternalLink, ImageIcon, Pencil, Trash2 } from 'lucide-react'
+import { CalendarPlus, ExternalLink, ImageIcon, Pencil, Trash2 } from 'lucide-react'
 import { mapsUrl } from '@/lib/geo'
 import type { Tempat } from '@/lib/types'
 import { UploadButton } from './Photos'
@@ -29,7 +29,16 @@ export function TempatCard({
     t.lat === null || t.lng === null ? 'Koordinat belum ada' : km !== null ? `± ${km.toFixed(1)} km dari kamu` : null
 
   return (
-    <article className="rounded-xl bg-white p-2.5 shadow-sm">
+    <article className="relative rounded-xl bg-white p-2.5 shadow-sm">
+      <span
+        title={t.kunjungan > 0 ? `Dikunjungi ${t.kunjungan} kali` : 'Belum dikunjungi'}
+        aria-label={t.kunjungan > 0 ? `Dikunjungi ${t.kunjungan} kali` : 'Belum dikunjungi'}
+        className={`absolute right-2.5 top-2.5 grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-xs font-bold tabular-nums ${
+          t.kunjungan > 0 ? 'bg-done text-white' : 'bg-gray-200 text-muted'
+        }`}
+      >
+        {t.kunjungan > 0 ? t.kunjungan : '-'}
+      </span>
       <div className="flex gap-2.5">
         <button
           type="button"
@@ -52,7 +61,7 @@ export function TempatCard({
         </button>
 
         <div className="min-w-0 flex-1">
-          <h3 className="break-words text-[15px] font-semibold leading-snug">{t.nama}</h3>
+          <h3 className="break-words pr-9 text-[15px] font-semibold leading-snug">{t.nama}</h3>
           <p className="truncate text-xs text-muted">
             {t.kategori} · {t.kota}
           </p>
@@ -60,13 +69,6 @@ export function TempatCard({
           {jarak && (
             <p className={`truncate text-xs ${km !== null ? 'font-medium text-upload' : 'text-muted'}`}>{jarak}</p>
           )}
-          <span
-            className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-              t.kunjungan > 0 ? 'bg-done/10 text-done' : 'bg-gray-100 text-muted'
-            }`}
-          >
-            <CheckCheck size={13} /> {t.kunjungan > 0 ? `Dikunjungi ${t.kunjungan}×` : 'Belum dikunjungi'}
-          </span>
         </div>
       </div>
 

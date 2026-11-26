@@ -7,7 +7,7 @@ import { useMinute } from '@/hooks/useMinute'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
 import { angka, formatTanggal, formatTanggalPanjang, formatTanggalSingkat, nowJakarta, rupiah } from '@/lib/format'
 import { mapsUrl } from '@/lib/geo'
-import { kegiatanBerlangsung, moveItem } from '@/lib/schedule'
+import { kegiatanBerlangsung, moveItem, sudahTerlewat } from '@/lib/schedule'
 import type { Dompet, Kegiatan, TempatRingkas } from '@/lib/types'
 import { useFeedback } from './Feedback'
 import { KegiatanCard } from './KegiatanCard'
@@ -92,7 +92,7 @@ function DoneBody({
               inputMode="numeric"
               autoComplete="off"
               value={digits ? angka(Number(digits)) : ''}
-              onChange={(e) => setDigits(e.target.value.replace(/\D/g, '').slice(0, 14))}
+              onChange={(e) => setDigits(e.target.value.replace(/\D/g, '').slice(0, 9))}
               placeholder="0"
               className={inputCls}
             />
@@ -140,6 +140,7 @@ export function KegiatanList({
   today,
   tempat,
   dompet = [],
+  selesaiHariIni = [],
 }: {
   mode: Mode
   items: Kegiatan[]
@@ -147,6 +148,8 @@ export function KegiatanList({
   tempat: TempatRingkas[]
   /** Hanya Rencana: untuk mencatat pengeluaran saat menandai terlaksana. */
   dompet?: Dompet[]
+  /** Hanya Rencana: jam kegiatan hari ini yang sudah diceklis. */
+  selesaiHariIni?: string[]
 }) {
   const { track } = useFeedback()
   const [q, setQ] = useState('')
@@ -215,11 +218,11 @@ export function KegiatanList({
 
   // Kartu yang sedang berlangsung (hanya di Rencana). minute = 0 di server/hidrasi: belum ada sorotan.
   const minute = useMinute()
-  const aktifId = (() => {
-    if (mode !== 'rencana' || minute === 0) return null
-    const now = nowJakarta(minute * 60_000)
-    return kegiatanBerlangsung(merged, now.tanggal, now.menit)
-  })()
+  const now = mode === 'rencana' && minute !== 0 ? nowJakarta(minute * 60_000) : null
+  const aktifId = now ? kegiatanBerlangsung(merged, now.tanggal, now.menit, selesaiHariIni) : null
+  const terlewat = (k: Kegiatan) =>
+    mode === 'rencana' &&
+    (now ? sudahTerlewat(k, merged, now.tanggal, now.menit, selesaiHariIni) : k.tanggal < today)
 
   const tempatById = useMemo(() => new Map(tempat.map((t) => [t.id, t])), [tempat])
 
@@ -267,7 +270,15 @@ export function KegiatanList({
               data-day={day}
               className={`mx-3 mb-3 rounded-xl p-1 transition-colors ${t ? 'bg-upload/10' : ''}`}
             >
-              <h2 className="mb-1 px-1 text-xs font-semibold text-muted">{formatTanggal(day)}</h2>
+              <div className="mb-1 flex items-center justify-between gap-2 px-1 text-xs font-semibold">
+                <h2 className="min-w-0 text-muted">{formatTanggal(day)}</h2>
+                {/* Dihitung dari semua kegiatan hari itu, bukan hanya yang tampil di halaman ini. */}
+                <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5">
+                  {mode === 'rencana'
+                    ? `${merged.filter((x) => x.tanggal === day).length} rencana`
+                    : rupiah(merged.reduce((s, x) => (x.tanggal === day ? s + x.budget : s), 0))}
+                </span>
+              </div>
               <div className="space-y-1.5">
                 {dayItems.map((item) => {
                   const isDragged = item.id === dragId
@@ -281,7 +292,7 @@ export function KegiatanList({
                         mode={mode}
                         dragging={isDragged}
                         active={item.id === aktifId}
-                        terlewat={mode === 'rencana' && item.tanggal < today}
+                        terlewat={terlewat(item)}
                         mapsHref={mapsFor(item)}
                         style={isDragged ? { transform: `translateY(${dy}px)` } : undefined}
                         dragProps={mode === 'rencana' ? bind(item.id) : undefined}

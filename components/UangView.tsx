@@ -542,7 +542,12 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
                 {rupiah(terpakaiLiburan(selesai))}
               </p>
             )}
-            <h3 className="mb-1 px-1 text-xs font-semibold text-muted">{formatTanggal(tgl)}</h3>
+            <div className="mb-1 flex items-center justify-between gap-2 px-1 text-xs font-semibold">
+              <h3 className="min-w-0 text-muted">{formatTanggal(tgl)}</h3>
+              <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5">
+                {daftar.filter((t) => t.tanggal === tgl && cap(t) === selesai).length} transaksi
+              </span>
+            </div>
             <div className="space-y-1.5">
               {tampil
                 .filter((t) => t.tanggal === tgl && cap(t) === selesai)

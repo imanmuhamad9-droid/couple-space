@@ -21,7 +21,7 @@ const SaveInput = z.object({
 })
 
 const Pengeluaran = z.object({
-  jumlah: z.number().int('Jumlah harus angka bulat').min(1).max(100_000_000_000_000),
+  jumlah: z.number().int('Jumlah harus angka bulat').min(1).max(2_000_000_000, 'Jumlah terlalu besar'),
   dompetId: z.uuid('Pilih dompet'),
 })
 
@@ -72,7 +72,8 @@ export async function deleteKegiatan(idRaw: string) {
 /**
  * Tandai terlaksana. Lampiran Rencana dihapus (Histori mulai kosong).
  * Jika `tempatIdRaw` dipilih dan kegiatan belum terhubung ke tempat, kegiatan dihubungkan ke tempat itu.
- * Jika `pengeluaranRaw` diisi, dicatat juga sebagai uang keluar (keterangan = nama kegiatan).
+ * Jika `pengeluaranRaw` diisi, dicatat juga sebagai uang keluar (keterangan = nama kegiatan),
+ * dan budget kegiatan diganti dengan jumlah itu sehingga Histori menampilkan uang yang benar-benar keluar.
  * Jumlah kunjungan tidak disimpan: dihitung dari kegiatan terlaksana yang terhubung ke tempat.
  */
 export async function markTerlaksana(
@@ -97,6 +98,7 @@ export async function markTerlaksana(
           status: 'terlaksana',
           terlaksana_at: new Date().toISOString(),
           ...(picked && !row.tempat_id ? { tempat_id: picked } : {}),
+          ...(keluar ? { budget: keluar.jumlah } : {}),
         })
         .eq('id', id)
         .eq('status', 'rencana')
