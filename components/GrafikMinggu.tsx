@@ -21,7 +21,9 @@ export function GrafikMinggu({ data, warna }: { data: { tanggal: string; jumlah:
   const maks = Math.max(1, ...data.map((d) => d.jumlah))
   const kolom = (LEBAR - 2 * TEPI) / (data.length - 1)
   const x = (i: number) => TEPI + i * kolom
-  const y = (n: number) => DASAR - (n / maks) * (DASAR - TEPI)
+  // Hari yang tidak nol tetap diberi tinggi minimum: tanpa ini nilai kecil di samping nilai sangat
+  // besar menempel di garis nol dan terlihat seperti kosong. Angka persisnya ada di daftar bawah.
+  const y = (n: number) => DASAR - (n > 0 ? Math.max(14, (n / maks) * (DASAR - TEPI)) : 0)
   const sorot = pilih === null ? null : data[pilih]
 
   return (
