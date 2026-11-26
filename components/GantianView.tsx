@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Pencil, Plus, Send, Trash2 } from 'lucide-react'
+import { ArrowLeft, Copy, Pencil, Plus, Send, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 import { bayarGantian, deleteGantian, saveNamaGantian, saveTalang } from '@/app/actions/gantian'
@@ -37,7 +37,15 @@ function Pilihan<T extends string>({
   )
 }
 
-function InputRupiah({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function InputRupiah({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
   return (
     <Field label={label}>
       <input
@@ -118,7 +126,7 @@ function CatatForm({
 }
 
 function BayarForm({ saldo, nama, today, onDone }: { saldo: number; nama: string; today: string; onDone: () => void }) {
-  const { track } = useFeedback()
+  const { track, toast } = useFeedback()
   const total = Math.abs(saldo)
   const [jumlah, setJumlah] = useState(String(total))
   const [tanggal, setTanggal] = useState(today)
@@ -136,6 +144,16 @@ function BayarForm({ saldo, nama, today, onDone }: { saldo: number; nama: string
     if (r.ok) onDone()
   }
 
+  // Yang disalin angka polos (tanpa "Rp" dan titik) supaya bisa langsung ditempel di aplikasi bank.
+  async function salin() {
+    try {
+      await navigator.clipboard.writeText(jumlah)
+      toast(`Disalin: ${jumlah}`)
+    } catch {
+      toast('Gagal menyalin. Salin manual dari kotaknya.')
+    }
+  }
+
   const cepat = (label: string, n: number) => (
     <button type="button" onClick={() => setJumlah(String(n))} className="h-10 rounded-xl bg-gray-100 text-sm font-semibold">
       {label}
@@ -147,7 +165,19 @@ function BayarForm({ saldo, nama, today, onDone }: { saldo: number; nama: string
       <p className="text-sm text-muted">
         {kalimatSaldo(saldo, nama)} {rupiah(total)}
       </p>
-      <InputRupiah label="Dibayar (Rp)" value={jumlah} onChange={setJumlah} />
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <InputRupiah label="Dibayar (Rp)" value={jumlah} onChange={setJumlah} />
+        </div>
+        <button
+          type="button"
+          onClick={salin}
+          disabled={!jumlah}
+          className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-gray-100 px-4 text-sm font-semibold disabled:opacity-40"
+        >
+          <Copy size={16} /> Salin
+        </button>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         {cepat('Semua', total)}
         {cepat('Setengah', Math.ceil(total / 2))}
