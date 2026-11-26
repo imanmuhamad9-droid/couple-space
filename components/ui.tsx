@@ -1,8 +1,8 @@
 'use client'
 
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, RefreshCw, Search } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, RefreshCw, Search, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition, type ReactNode } from 'react'
+import { useRef, useState, useTransition, type InputHTMLAttributes, type ReactNode } from 'react'
 import { KETERANGAN } from '@/lib/constants'
 import { formatTanggalRingkas } from '@/lib/format'
 import { Sheet } from './Sheet'
@@ -154,6 +154,33 @@ export function Field({ label, children }: { label: string; children: ReactNode 
       <span className="mb-1 block text-sm font-medium text-muted">{label}</span>
       {children}
     </label>
+  )
+}
+
+/** Kotak isian dengan tombol hapus di kanan (muncul kalau ada isinya), untuk teks panjang seperti link Maps. */
+export function InputHapus({
+  value,
+  onHapus,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & { value: string; onHapus: () => void }) {
+  const ref = useRef<HTMLInputElement>(null)
+  return (
+    <span className="flex gap-2">
+      <input ref={ref} value={value} {...props} className={inputCls} />
+      {value !== '' && (
+        <button
+          type="button"
+          onClick={() => {
+            onHapus()
+            ref.current?.focus()
+          }}
+          aria-label="Hapus isian"
+          className="grid size-11 shrink-0 place-items-center rounded-xl bg-gray-100 text-muted active:scale-95"
+        >
+          <X size={18} />
+        </button>
+      )}
+    </span>
   )
 }
 

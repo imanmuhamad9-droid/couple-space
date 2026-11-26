@@ -102,6 +102,7 @@ label:has(input:required, select:required, textarea:required) > span:first-child
 
 /* Wajib tapi belum diisi saat disubmit (lihat components/CekWajib.tsx). */
 label[data-salah] > input,
+label[data-salah] > span > input,
 label[data-salah] > select,
 label[data-salah] > textarea,
 label[data-salah] > span:nth-child(2) {

@@ -7,7 +7,7 @@ import { KATEGORI, KOTA } from '@/lib/constants'
 import { kapitalAwal } from '@/lib/format'
 import type { Tempat } from '@/lib/types'
 import { useFeedback } from './Feedback'
-import { Field, inputCls, PickerField, SubmitButton } from './ui'
+import { Field, InputHapus, inputCls, PickerField, SubmitButton } from './ui'
 
 /** Isi sheet tambah/edit tempat. Di-mount baru tiap sheet dibuka. */
 export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone: () => void }) {
@@ -73,12 +73,12 @@ export function TempatForm({ initial, onDone }: { initial: Tempat | null; onDone
         <PickerField label="Jam tutup" type="time" value={tutup} onChange={setTutup} />
       </div>
       <Field label="Link Google Maps">
-        <input
+        <InputHapus
           value={linkMaps}
           onChange={(e) => setLinkMaps(e.target.value)}
+          onHapus={() => setLinkMaps('')}
           maxLength={1000}
           placeholder="https://maps.app.goo.gl/..."
-          className={inputCls}
         />
       </Field>
 

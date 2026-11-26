@@ -14,7 +14,7 @@ import { PhotoViewer } from './Photos'
 import { ConfirmSheet, Sheet } from './Sheet'
 import { TempatCard } from './TempatCard'
 import { TempatForm } from './TempatForm'
-import { Chip, Empty, Fab, Field, inputCls, PageHeader, Pagination, SearchBox, SubmitButton } from './ui'
+import { Chip, Empty, Fab, Field, InputHapus, PageHeader, Pagination, SearchBox, SubmitButton } from './ui'
 
 // Leaflet butuh browser, jadi dimuat hanya saat peta dibuka.
 const MapView = dynamic(() => import('./MapView'), {
@@ -257,11 +257,11 @@ export function TempatList({ items, today }: { items: Tempat[]; today: string })
             koordinat.
           </p>
           <Field label="Koordinat atau link Maps">
-            <input
+            <InputHapus
               required
               value={manualText}
               onChange={(e) => setManualText(e.target.value)}
-              className={inputCls}
+              onHapus={() => setManualText('')}
             />
           </Field>
           <SubmitButton busy={false}>Simpan lokasi</SubmitButton>

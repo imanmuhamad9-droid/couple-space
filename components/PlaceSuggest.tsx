@@ -3,7 +3,7 @@
 import { Check, MapPin } from 'lucide-react'
 import { suggestTempat } from '@/lib/suggest'
 import type { TempatRingkas } from '@/lib/types'
-import { Field, inputCls } from './ui'
+import { Field, InputHapus } from './ui'
 
 /**
  * Kolom nama tempat dengan rekomendasi dari Database saat mengetik. Teks bebas tetap boleh:
@@ -34,13 +34,13 @@ export function PlaceSuggest({
   return (
     <div>
       <Field label={label}>
-        <input
+        <InputHapus
           value={value}
           onChange={(e) => onText(e.target.value)}
+          onHapus={() => onText('')}
           maxLength={maxLength}
           placeholder={placeholder}
           autoComplete="off"
-          className={inputCls}
         />
       </Field>
 
