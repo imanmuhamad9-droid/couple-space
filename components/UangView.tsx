@@ -337,7 +337,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
     }
     return {
       judul: t.keterangan,
-      sub: aktifId === null ? (nama.get(t.dompetId) ?? null) : null,
+      sub: [aktifId === null ? nama.get(t.dompetId) : null, t.kewajiban ? 'Kewajiban' : null].filter(Boolean).join(' · ') || null,
       jumlah: `${t.jenis === 'masuk' ? '+' : '−'} ${rupiah(t.jumlah)}`,
       warna: t.jenis === 'masuk' ? 'text-done' : 'text-del',
     }
@@ -597,6 +597,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
                         ['Ke dompet', nama.get(selected.tujuanId ?? '') ?? '?'],
                       ]
                     : [['Dompet', nama.get(selected.dompetId) ?? '?']]),
+                  ...(selected.kewajiban ? [['Kewajiban', 'Ya']] : []),
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-3 py-1.5">
                     <dt className="shrink-0 text-muted">{k}</dt>

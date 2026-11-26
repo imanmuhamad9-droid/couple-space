@@ -192,6 +192,12 @@ describe('bulananHarian & liburanInfo', () => {
     expect(r.hariKe).toBe(2)
     expect(r.bolehHariIni).toBe(100_000)
   })
+  it('kewajiban tidak dihitung ke jatah harian maupun periode, tetapi mengurangi saldo', () => {
+    const data = [{ ...t('2026-11-27', 5_000_000), kewajiban: true }, t('2026-11-27', 30_000)]
+    expect(bulananHarian(data, p, 'b', 3_000_000, '2026-11-27').terpakai).toBe(30_000)
+    expect(jatahInfo(data, p, 'b', 3_000_000, '2026-11-27').terpakai).toBe(30_000)
+    expect(ringkasan(data, p, 'b').saldo).toBe(-5_030_000)
+  })
   it('liburan: yang sudah ditutup tidak dihitung', () => {
     const lama = { ...t('2026-11-01', 900_000, 'l'), liburanSelesai: '2026-11-03T00:00:00Z' }
     const r = liburanInfo([t('2026-12-01', 100_000, 'l'), lama], 'l', 1_000_000, 2, '2026-12-01')

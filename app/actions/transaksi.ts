@@ -15,6 +15,8 @@ const Input = z.object({
   dompetId: z.uuid('Pilih dompet'),
   /** Hanya untuk pindah dana. */
   tujuanId: z.uuid().nullable().optional(),
+  /** Tidak dikirim = jangan diubah. */
+  kewajiban: z.boolean().optional(),
 })
 
 export async function saveTransaksi(input: z.input<typeof Input>) {
@@ -33,8 +35,11 @@ export async function saveTransaksi(input: z.input<typeof Input>) {
     }
 
     const row = { ...v, keterangan: note, dompet_id: dompetId, dompet_tujuan_id: tujuan }
-    if (id) must(await admin().from('transaksi').update(row).eq('id', id))
-    else must(await admin().from('transaksi').insert(row))
+    const res = id
+      ? await admin().from('transaksi').update(row).eq('id', id)
+      : await admin().from('transaksi').insert(row)
+    if (res.error && /kewajiban/.test(res.error.message)) throw new Error('Jalankan dulu migrasi 0013 di Supabase')
+    must(res)
     revalidatePath('/', 'layout')
   })
 }

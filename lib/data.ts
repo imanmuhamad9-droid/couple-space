@@ -129,6 +129,7 @@ export async function listTransaksi(): Promise<Transaksi[]> {
     dompetId: r.dompet_id as string,
     tujuanId: (r.dompet_tujuan_id as string | null) ?? null,
     liburanSelesai: (r.liburan_selesai as string | null | undefined) ?? null,
+    kewajiban: r.kewajiban === true,
   }))
 }
 

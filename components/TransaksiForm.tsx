@@ -41,6 +41,7 @@ export function TransaksiForm({
   // Catatan bawaan "Pindah dana" tidak ditampilkan di kolom isian.
   const [keterangan, setKeterangan] = useState(initial && initial.keterangan !== 'Pindah dana' ? initial.keterangan : '')
   const [tanggal, setTanggal] = useState(initial?.tanggal ?? today)
+  const [kewajiban, setKewajiban] = useState(initial?.kewajiban ?? false)
   const [busy, setBusy] = useState(false)
 
   // Asal dan tujuan pindah dana tidak boleh sama: yang satunya otomatis berganti.
@@ -61,6 +62,11 @@ export function TransaksiForm({
     if (dompet.some((d) => d.id === s.dompetId)) setDompetId(s.dompetId)
   }
 
+  // Centang hanya relevan untuk pengeluaran dari dompet yang punya jatah (Liburan punya budget sendiri).
+  const asal = dompet.find((d) => d.id === dompetId)
+  const adaJatah = jenis === 'keluar' && asal?.jenis !== 'liburan' && (asal?.jenis === 'bulanan' || !!asal?.jatah)
+  const nilaiKewajiban = adaJatah && kewajiban
+
   async function submit(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
@@ -73,6 +79,8 @@ export function TransaksiForm({
         keterangan,
         dompetId,
         tujuanId: jenis === 'pindah' ? tujuanId : null,
+        // dikirim hanya bila perlu, supaya simpan biasa tetap jalan sebelum migrasi 0013
+        ...(nilaiKewajiban || initial?.kewajiban ? { kewajiban: nilaiKewajiban } : {}),
       }),
       'Tersimpan',
     )
@@ -164,6 +172,14 @@ export function TransaksiForm({
       )}
 
       <PickerField label="Tanggal" type="date" required value={tanggal} onChange={setTanggal} />
+      {adaJatah && (
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={kewajiban} onChange={(e) => setKewajiban(e.target.checked)} className="size-5 accent-upload" />
+          <span>
+            Kewajiban <span className="text-muted">(tidak dihitung ke jatah)</span>
+          </span>
+        </label>
+      )}
       <SubmitButton busy={busy}>{initial ? 'Simpan perubahan' : 'Simpan'}</SubmitButton>
     </form>
   )

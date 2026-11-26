@@ -67,4 +67,6 @@ export type Transaksi = {
   tujuanId: string | null
   /** Terisi = bagian dari liburan yang sudah selesai (waktu ditutupnya). */
   liburanSelesai?: string | null
+  /** Pengeluaran kewajiban: mengurangi saldo, tetapi tidak dihitung ke jatah. */
+  kewajiban?: boolean
 }

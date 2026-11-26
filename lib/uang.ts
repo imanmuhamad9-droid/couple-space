@@ -94,13 +94,16 @@ export function selisihHari(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000)
 }
 
+/** Yang dihitung ke jatah: semua kecuali pengeluaran kewajiban. */
+const jajan = (items: Transaksi[]) => items.filter((t) => !t.kewajiban)
+
 /**
  * Jatah satu dompet pada periode `p`: terpakai = uang keluar dompet itu (pindah dana tidak dihitung).
  * `perHari` (sisa jatah dibagi sisa hari, termasuk hari ini) hanya untuk periode yang sedang berjalan
  * dan selama jatah belum habis.
  */
 export function jatahInfo(items: Transaksi[], p: Periode, dompetId: string, jatah: number, today: string) {
-  const terpakai = ringkasan(items, p, dompetId).keluar
+  const terpakai = ringkasan(jajan(items), p, dompetId).keluar
   const sisa = jatah - terpakai
   const berjalan = today >= p.start && today <= p.end
   const sisaHari = berjalan ? selisihHari(today, p.end) + 1 : 0
@@ -129,7 +132,7 @@ function status(terpakai: number, boleh: number): Status {
 export function bulananHarian(items: Transaksi[], p: Periode, dompetId: string, jatah: number, today: string) {
   const hariPeriode = selisihHari(p.start, p.end) + 1
   const batas = Math.floor(jatah / hariPeriode)
-  const terpakai = ringkasan(items, { ...p, start: today, end: today }, dompetId).keluar
+  const terpakai = ringkasan(jajan(items), { ...p, start: today, end: today }, dompetId).keluar
   return { batas, terpakai, sisa: batas - terpakai, persen: batas > 0 ? Math.min(100, (terpakai / batas) * 100) : 100, status: status(terpakai, batas) }
 }
 

@@ -69,6 +69,7 @@ export const KETERANGAN = {
   uang: [
     'Geser kartu ke samping untuk berpindah dompet. Kartu "Keseluruhan" (total semua dompet) ada di ujung, disusul kartu putih "+ Dompet" untuk menambah dompet.',
     'Bulanan: jatah per periode gajian dibagi rata per hari. Kartu menampilkan batas hari ini dan sisanya; sisa hari ini tidak dibawa ke besok.',
+    'Centang "Kewajiban" saat mencatat cicilan, kontrakan, kasih orang tua, dan sejenisnya: saldo berkurang, tetapi tidak dihitung ke jatah. Transaksi lama bisa dicentang lewat Edit.',
     'Liburan: isi budget dan lama liburan (tekan kartunya). Budget dibagi per hari, dan sisa jajan hari ini dibawa ke hari berikutnya. Hari ke-1 adalah hari pertama ada pengeluaran dari dompet Liburan. Kartu berubah kuning (hampir habis) atau merah (lewat batas).',
     'Selesai liburan: tekan kartu Liburan lalu "Liburan selesai, mulai baru". Hitungan mulai dari awal, riwayat lama tetap ada dan dipisah garis. Saldo tidak berubah.',
     'Tabungan: hanya saldo, tanpa target. Tiga dompet bawaan ini terkunci (tidak bisa dihapus atau diganti nama). Dompet yang kamu tambah sendiri boleh punya jatah opsional dan bisa dihapus.',
