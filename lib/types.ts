@@ -69,4 +69,6 @@ export type Transaksi = {
   liburanSelesai?: string | null
   /** Pengeluaran kewajiban: mengurangi saldo, tetapi tidak dihitung ke jatah. */
   kewajiban?: boolean
+  /** Berasal dari menu Gantian: hanya bisa diubah atau dihapus dari sana. */
+  dariGantian?: boolean
 }

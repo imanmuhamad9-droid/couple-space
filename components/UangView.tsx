@@ -4,7 +4,7 @@ import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Handshake, Penc
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type UIEvent } from 'react'
 import { deleteDompet, saveDompet, selesaiLiburan, urutkanDompet } from '@/app/actions/dompet'
-import { deleteTransaksi } from '@/app/actions/transaksi'
+import { deleteTransaksi, setKewajiban } from '@/app/actions/transaksi'
 import { useHorizontalReorder } from '@/hooks/useHorizontalReorder'
 import { ITEM_PER_HALAMAN } from '@/lib/constants'
 import { angka as rb, formatTanggal, formatTanggalSingkat, kapitalAwal, nowJakarta, rupiah } from '@/lib/format'
@@ -358,6 +358,10 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
           : null
 
   const detail = selected ? baris(selected) : null
+  const punyaJatah = (id: string) => {
+    const d = dompet.find((x) => x.id === id)
+    return d?.jenis !== 'liburan' && (d?.jenis === 'bulanan' || !!d?.jatah)
+  }
   const lebarKartu = kompak ? 'w-[42%]' : 'w-[86%]'
 
   return (
@@ -606,6 +610,34 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
                 ))}
               </dl>
             </div>
+            {selected.dariGantian ? (
+              <div className="space-y-3">
+                {selected.jenis === 'keluar' && punyaJatah(selected.dompetId) && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selected.kewajiban ?? false}
+                      onChange={async (e) => {
+                        const kewajiban = e.target.checked
+                        setSelected({ ...selected, kewajiban })
+                        const r = await track(setKewajiban(selected.id, kewajiban), 'Tersimpan')
+                        if (!r.ok) setSelected(selected)
+                      }}
+                      className="size-5 accent-upload"
+                    />
+                    <span>
+                      Kewajiban <span className="text-muted">(tidak dihitung ke jatah)</span>
+                    </span>
+                  </label>
+                )}
+                <Link
+                  href="/gantian"
+                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-gray-100 text-sm font-semibold"
+                >
+                  <Handshake size={17} /> Ubah dari menu Gantian
+                </Link>
+              </div>
+            ) : (
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -629,6 +661,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
                 <Trash2 size={17} /> Hapus
               </button>
             </div>
+            )}
           </div>
         )}
       </Sheet>

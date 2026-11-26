@@ -81,6 +81,7 @@ export const KETERANGAN = {
     'Tekan kartu "Uang masuk" atau "Uang keluar" untuk diagram 7 hari terakhir dompet yang sedang dilihat.',
     'Kotak cari di sebelah tombol Tambah mencari keterangan, tanggal, atau jumlah di semua periode.',
     'Di semua form, bintang merah = wajib diisi.',
+    'Transaksi yang berasal dari Gantian dikunci di sini: edit atau hapus dari menu Gantian.',
     'Tekan panah di atas untuk melihat periode lain. Tekan satu transaksi untuk edit atau hapus.',
   ],
   gantian: [
