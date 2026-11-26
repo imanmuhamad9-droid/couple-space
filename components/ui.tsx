@@ -175,7 +175,7 @@ export function InputHapus({
             ref.current?.focus()
           }}
           aria-label="Hapus isian"
-          className="grid size-11 shrink-0 place-items-center rounded-xl bg-gray-100 text-muted active:scale-95"
+          className="grid size-11 shrink-0 place-items-center rounded-xl bg-del/10 text-del active:scale-95"
         >
           <X size={18} />
         </button>
