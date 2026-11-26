@@ -300,9 +300,6 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
         status: p.lewat ? 'lewat' : h.status, // jatah periode habis tetap merah walau hari ini hemat
         l1: `Hari ini ${rupiah(h.terpakai)} dari ${rupiah(h.batas)}`,
         l2: h.sisa >= 0 ? `Sisa hari ini ${rupiah(h.sisa)}` : `Lewat ${rupiah(-h.sisa)}`,
-        l3: p.lewat
-          ? `Periode lewat ${rupiah(-p.sisa)} dari ${rupiah(d.jatah)}`
-          : `Periode: ${rupiah(p.terpakai)} dari ${rupiah(d.jatah)}`,
       }
     }
     return {
@@ -493,7 +490,7 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
         </button>
       </div>
 
-      <div className="mx-3 grid grid-cols-2 gap-2">
+      <div className="mx-4 grid grid-cols-2 gap-2">
         <button type="button" onClick={() => setGrafik('masuk')} className="min-w-0 rounded-xl bg-white p-3 text-left shadow-sm active:bg-gray-50">
           <p className="flex items-center gap-1 text-xs text-muted">
             <ArrowDownLeft size={14} className="text-done" /> Uang masuk
@@ -508,23 +505,28 @@ export function UangView({ items, dompet, today }: { items: Transaksi[]; dompet:
         </button>
       </div>
 
-      <button
-        type="button"
-        onClick={() => bukaForm(null)}
-        className="mx-3 mt-3 flex h-12 w-[calc(100%-1.5rem)] items-center justify-center gap-2 rounded-xl bg-upload font-semibold text-white active:scale-[0.99]"
-      >
-        <Plus size={20} /> Tambah transaksi
-      </button>
+      <div className="mt-3">
+        <SearchBox
+          value={q}
+          onChange={(v) => {
+            setQ(v)
+            setPage(0)
+          }}
+          placeholder="Cari transaksi..."
+          left={
+            <button
+              type="button"
+              onClick={() => bukaForm(null)}
+              aria-label="Tambah transaksi"
+              className="flex h-11 shrink-0 items-center gap-1 rounded-xl bg-upload px-4 text-sm font-semibold text-white active:scale-[0.99]"
+            >
+              <Plus size={18} /> Tambah
+            </button>
+          }
+        />
+      </div>
 
-      <h2 className="mx-4 mb-1 mt-5 text-xs font-semibold text-muted">{judulRiwayat}</h2>
-      <SearchBox
-        value={q}
-        onChange={(v) => {
-          setQ(v)
-          setPage(0)
-        }}
-        placeholder="Cari di semua periode..."
-      />
+      <h2 className="mx-4 mb-1 mt-2 text-xs font-semibold text-muted">{judulRiwayat}</h2>
       {daftar.length === 0 ? (
         <Empty>{words.length ? 'Tidak ada yang cocok.' : 'Belum ada transaksi di periode ini.'}</Empty>
       ) : (
